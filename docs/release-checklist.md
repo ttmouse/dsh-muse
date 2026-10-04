@@ -35,7 +35,7 @@
 
 ## 6. 外部视角走查
 
-- [ ] 按 README 从零在干净 profile 装一遍（不依赖本机已有状态），记录堵点并修
+- [x] 按 README 从零在干净 profile 装一遍（已验证：muse-scratch profile 从仓库路径安装两包，组合树含 goal 全家 + muse/tool-muse；发现 web 模板自带 goal 家族，外部用户只需装两个包）
 - [ ] 体验指南三步（持续推进/重启恢复/静默心跳）在干净环境各走通一次
 
 ## 附带工作项
