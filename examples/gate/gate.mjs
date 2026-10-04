@@ -20,9 +20,9 @@
  * the local credential record (owner-only ~/.dsh/.credentials.yaml). Never
  * leaves the machine; requires the script to run as the same OS user.
  */
-import { existsSync, unlinkSync, readFileSync, appendFileSync } from 'node:fs'
+import { existsSync, unlinkSync, readFileSync, appendFileSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { parseArgs } from 'node:util'
 import { callRpc, llmJson, logDecision as sharedLog } from '../lib/dsh-client.mjs'
 
@@ -45,11 +45,55 @@ const projectDir = process.env.MUSE_PROJECT_DIR ?? process.cwd()
 const rules = args['rules'] ? JSON.parse(readFileSync(resolve(args['rules']), 'utf8')) : []
 const signalPath = join(projectDir, 'MUSE-SIGNAL.md')
 
-/** Collect (message, consumePath) pairs that passed the gate. */
+/** Collect (message, consumePath?) pairs that passed the gate. */
 const hits = []
 for (const rule of rules) {
   if (rule.type === 'file-exists' && existsSync(rule.path)) hits.push({ message: rule.message ?? `Signal: ${rule.path}`, consume: rule.path })
 }
+// ---- P5: deterministic sensitive-content filter (pre-check layer; never reaches the agent) ----
+const SENSITIVE_PATTERNS = [
+  /验证码|verification code|one[- ]time code/i,
+  /password reset|重置密码|reset your password/i,
+  /sign[- ]in link|magic link|免密登录/i,
+  /\b\d{4,8}\b(?=.*(?:code|码))/i,
+]
+function isSensitive(text) { return SENSITIVE_PATTERNS.some(p => p.test(text)) }
+
+// ---- P1: http-poll source — poll an external API, report only NEW items since last run ----
+async function pollHttp(rule) {
+  const res = await fetch(rule.url, { headers: rule.headers ?? {} })
+  if (!res.ok) throw new Error(`http-poll ${res.status} for ${rule.url}`)
+  const body = await res.json()
+  const items = rule.select ? rule.select.split('.').reduce((o, k) => o?.[k], body) ?? [] : body
+  const list = Array.isArray(items) ? items : [items]
+  const stateDir = join(projectDir, '.gate-state')
+  mkdirSync(stateDir, { recursive: true })
+  const stateFile = join(stateDir, createHash('sha256').update(rule.url).digest('hex').slice(0, 16) + '.json')
+  const seen = existsSync(stateFile) ? new Set(JSON.parse(readFileSync(stateFile, 'utf8'))) : new Set()
+  const fresh = list.filter(item => {
+    const id = typeof item === 'string' ? item : JSON.stringify(item)
+    if (seen.has(id)) return false
+    seen.add(id)
+    return true
+  })
+  writeFileSync(stateFile, JSON.stringify([...seen].slice(-500)))
+  return fresh.map(item => {
+    const text = typeof item === 'string' ? item : JSON.stringify(item)
+    return { message: (rule.messageTemplate ?? '$text').replaceAll('$text', text), sensitive: isSensitive(text) }
+  })
+}
+
+for (const rule of rules) {
+  if (rule.type === 'http-poll') {
+    try {
+      for (const hit of await pollHttp(rule)) {
+        if (hit.sensitive) { logDecision(`sensitive dropped (never reaches the agent): ${hit.message.slice(0, 60)}`); continue }
+        hits.push({ message: hit.message })
+      }
+    } catch (error) { console.error(`gate: poll failed: ${String(error).slice(0, 160)}`) }
+  }
+}
+
 if (existsSync(signalPath)) {
   const text = readFileSync(signalPath, 'utf8')
   const first = text.split('\n').map(l => l.trim()).find(l => l && !l.startsWith('#')) ?? 'Signal'

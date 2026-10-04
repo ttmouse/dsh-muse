@@ -77,3 +77,14 @@ Cookie: dsh-auth-<b64url(sha256(authority))>=v1.<b64url(json payload)>.<b64url(h
 - `session/prompt` 的 args 字段名是 `request`（`session/list` 是 `_request`）——共享客户端会从网关报错里自动学习正确字段名
 - request 里需要 `requestId`（uuid）
 - 共享模块在 `examples/lib/dsh-client.mjs`：mintCookie / callRpc / injectPrompt / llmJson，reflect 脚本复用
+
+## 连接器 source（P1）与敏感过滤（P5）
+
+`rules.json` 支持 `http-poll`：定时拉取任意 JSON API（RSS 桥、ics 转换器、webhook 收集器），只报告**新增**条目（状态文件去重）：
+
+```json
+[ { "type": "http-poll", "url": "https://example/feed.json", "select": "items",
+    "messageTemplate": "新动态：$text" } ]
+```
+
+**安全红线（P5）**：所有候选消息先过确定性敏感滤除（验证码/密码重置/免密登录链接），敏感内容在预检层丢弃、永不进入 agent 上下文——这是接邮箱类高价值账号的前提。
