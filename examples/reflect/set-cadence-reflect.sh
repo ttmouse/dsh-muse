@@ -18,6 +18,7 @@ cat > "$PLIST" <<XML
     <string>--session</string><string>$MUSE_SESSION_ID</string>
   </array>
   <key>StartInterval</key><integer>$SECS</integer>
+  <key>WorkingDirectory</key><string>$(cd "$DIR/../.." && pwd)</string>
   <key>RunAtLoad</key><true/>
   <key>StandardOutPath</key><string>/tmp/dsh-muse-reflect.log</string>
   <key>StandardErrorPath</key><string>/tmp/dsh-muse-reflect.log</string>

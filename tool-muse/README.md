@@ -2,7 +2,7 @@
 
 English | [中文](README.zh.md)
 
-Model-facing `muse_autonomy` tool: records the session's durable autonomy decision (`muse/intent`) under direct-human authority. This is the intent producer for [`dsh-muse`](../muse/README.md); the keeper consumes the decision and re-arms goal continuation across restarts.
+Model-facing `muse_autonomy` tool: records a human-message-bound durable autonomy decision under direct-human authority. This is the intent producer for [`dsh-muse`](../muse/README.md); the keeper consumes the decision and re-arms goal continuation across restarts.
 
 ## Composition
 
@@ -16,7 +16,7 @@ Model-facing `muse_autonomy` tool: records the session's durable autonomy decisi
 
 ## Tool: `muse_autonomy`
 
-Records one durable `muse/intent` event with the requested `autonomy` boolean and returns `{ autonomy }`. Latest-wins: recording again replaces the standing decision.
+Records one owner-only durable authorization file bound to the current human message with the requested `autonomy` boolean and returns `{ autonomy }`. Latest-wins: recording again replaces the standing decision.
 
 Authority mirrors `dsh-tool-goal`'s discipline: the call must come from the exact live calling agent inside its active driver, on a runtime root, with a host-attested direct human message in the current turn. Automatic continuations, subagents, and plugin sources are rejected loud — only the human grants or revokes standing autonomy.
 
@@ -40,3 +40,9 @@ Append-only: tool schemas are part of the stable prompt prefix; each call's resu
 
 - **No human command** — a human-facing `/muse` command that records the same decision without a model round-trip is deferred; the tool path already requires the human to speak through the model turn.
 - **No per-goal scoping** — the decision is session-wide; a per-goal autonomy surface would need a different durable record and is deferred.
+
+## Timer tools
+
+`muse_routine` creates/lists/pauses/resumes bounded work in the current session. Management requires the same direct-human authority; creating also requires standing autonomy. `muse_routine_result` records the current timed unit outcome (`progress`, `waiting`, `done`) and next step. It cannot grant work or extend budgets. See [usage and boundaries](../docs/timer-first.md).
+
+Ideas are delivered with `source.kind=muse` and `trigger=idea`; tool calls on an idea-only turn are denied before execution.

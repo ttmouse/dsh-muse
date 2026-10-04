@@ -23,7 +23,8 @@
   },
   "scripts": {
     "build": "tsc -b tsconfig.json && pnpm --filter @deepseek-ai/dsh-muse exec tsdown && pnpm --filter @deepseek-ai/dsh-tool-muse exec tsdown && pnpm --filter @deepseek-ai/dsh-tool-memory exec tsdown",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:timers": "node --test examples/tests/*.test.mjs"
   },
   "devDependencies": {
     "@types/node": "^24",

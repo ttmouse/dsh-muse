@@ -7,7 +7,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-goal'
 import { HarnessError } from '@deepseek-ai/dsh-llm'
-import { museIntentChange, MUSE_INTENT_VERSION, museSessionEvents } from '@deepseek-ai/dsh-muse'
+import { recordAutonomy, MUSE_INTENT_VERSION, museSessionEvents } from '@deepseek-ai/dsh-muse'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { GenericCallView, ToolRunContext } from '@deepseek-ai/dsh-tools'
@@ -122,11 +122,14 @@ export function apply(ctx: Context): void {
         text: JSON.stringify(value),
       }],
     },
-    execute(args, exec) {
+    async execute(args, exec) {
       const execution = museToolExecution(ctx, exec)
       requireDirectHuman(ctx, execution)
-      execution.agent.session.append('muse/intent', museIntentChange(args.autonomy, Date.now()))
-      if (!args.autonomy) ctx.goals?.disarm(execution.agent)
+      const human = execution.events.filter(event => event.type === 'user/message' && event.data.source.kind === 'user').at(-1)
+      if (human?.type !== 'user/message') reject('A direct human input is required')
+      await ctx.get('sessions')?.flush(execution.agent.session)
+      recordAutonomy(ctx, execution.agent, args.autonomy, human.data.id)
+      if (!args.autonomy) ctx.get('goals')?.disarm(execution.agent)
       return Promise.resolve({ autonomy: args.autonomy })
     },
     presentCall: args => ({
@@ -160,6 +163,7 @@ export function apply(ctx: Context): void {
                 id: { type: 'string', required: true }, title: { type: 'string', required: true },
                 enabled: { type: 'boolean', required: true }, everySeconds: { type: 'integer', required: true },
                 nextRunAt: { type: 'number', required: true }, runs: { type: 'integer', required: true }, maxRuns: { type: 'integer', required: true },
+                state: { type: 'string', required: true }, last_summary: { type: 'string', required: true }, next_step: { type: 'string', required: true },
               },
             },
           },
@@ -171,7 +175,7 @@ export function apply(ctx: Context): void {
       const execution = museToolExecution(ctx, exec)
       if (!['list', 'create', 'pause', 'resume'].includes(args.operation)) reject('Unknown routine operation', 'MUSE_ROUTINE_INPUT_INVALID')
       if (args.operation !== 'list') requireDirectHuman(ctx, execution)
-      const service = ctx.museRoutines
+      const service = ctx.get('museRoutines')
       if (service === undefined) reject('Load dsh-muse before using muse_routine', 'MUSE_ROUTINE_SERVICE_REQUIRED')
       const human = execution.events.filter(event => event.type === 'user/message' && event.data.source.kind === 'user').at(-1)
       try {
@@ -183,12 +187,55 @@ export function apply(ctx: Context): void {
         } else if (args.operation !== 'list') {
           service.setEnabled(execution.agent, args.id ?? '', args.operation === 'resume', human?.type === 'user/message' ? human.data.id : '')
         }
-        const routines = service.list(execution.agent).map(({ id, title, enabled, everySeconds, nextRunAt, runs, maxRuns }) => ({ id, title, enabled, everySeconds, nextRunAt, runs, maxRuns }))
+        const routines = service.list(execution.agent).map(({ id, title, enabled, everySeconds, nextRunAt, runs, maxRuns, lastResult }) => ({
+          id, title, enabled, everySeconds, nextRunAt, runs, maxRuns,
+          state: lastResult?.status === 'done' ? 'completed' : runs >= maxRuns ? 'budget-exhausted' : !enabled ? 'paused' : lastResult?.status === 'waiting' ? 'waiting' : 'scheduled',
+          last_summary: lastResult?.summary ?? '', next_step: lastResult?.nextStep ?? '',
+        }))
         return Promise.resolve({ routines })
       } catch (error) { reject(error instanceof Error ? error.message : 'Routine operation failed', 'MUSE_ROUTINE_OPERATION_FAILED') }
     },
     presentCall: args => ({ card: 'generic', title: `Muse routine: ${args.operation}`, kind: 'other' } satisfies GenericCallView),
   }))
+
+  ctx.tools.register(defineTool({
+    name: 'muse_routine_result',
+    description: 'Record the verified outcome and next step of the CURRENT timed routine. Requires its exact delivery_id. progress keeps the human cadence, waiting backs off without empty repeated reports, and done ends further runs. This tool cannot change autonomy, grant new work, extend a run budget or resume a goal.',
+    parameters: {
+      delivery_id: { type: 'string', required: true }, status: { type: 'string', required: true, description: 'progress, waiting, or done' },
+      summary: { type: 'string', required: true, description: 'Concrete result and evidence, or specific waiting condition' },
+      next_step: { type: 'string', required: true }, wait_seconds: { type: 'integer', description: 'For waiting, back off at least the routine interval, at most 86400 seconds' },
+    },
+    output: {
+      schema: { type: 'object', additionalProperties: false, properties: { recorded: { type: 'boolean', required: true } } },
+      render: (_args: unknown, value: unknown) => [{ type: 'text' as const, text: JSON.stringify(value) }],
+    },
+    execute(args, exec) {
+      const { agent } = museToolExecution(ctx, exec)
+      if (!['progress', 'waiting', 'done'].includes(args.status)) reject('Unknown routine result status', 'MUSE_ROUTINE_INPUT_INVALID')
+      const service = ctx.get('museRoutines')
+      if (!service) reject('Load dsh-muse first', 'MUSE_ROUTINE_SERVICE_REQUIRED')
+      service.recordResult(agent, args.delivery_id, args.status as 'progress' | 'waiting' | 'done', args.summary, args.next_step, args.wait_seconds ?? 0)
+      return Promise.resolve({ recorded: true })
+    },
+    presentCall: args => ({ card: 'generic', title: `Routine outcome: ${args.status}`, kind: 'other' } satisfies GenericCallView),
+  }))
+
+  // Proposal-only is enforced before tool execution, not just requested in a prompt.
+  ctx.on('tools/pre-execute', async (exec, next) => {
+    if (!exec.agent) return next()
+    const events = museSessionEvents(exec.agent.session)
+    let start = events.length
+    for (let index = events.length - 1; index >= 0; index--) {
+      if (events[index]?.type === 'turn/end') return next()
+      if (events[index]?.type === 'turn/start') { start = index; break }
+    }
+    const messages = events.slice(start).filter(e => e.type === 'user/message')
+    const proposal = messages.some(e => e.type === 'user/message' && e.data.source.kind === 'muse' && e.data.source.trigger === 'idea')
+    const human = messages.some(e => e.type === 'user/message' && e.data.source.kind === 'user')
+    if (proposal && !human) return { kind: 'deny' as const, reason: 'Muse ideas are proposals only; a direct human request is required before taking action.' }
+    return next()
+  })
 }
 
 export { MUSE_INTENT_VERSION }

@@ -9,6 +9,7 @@ import { createHash } from 'node:crypto'
 import { callRpc, injectPrompt, llmJson, logDecision } from '../lib/dsh-client.mjs'
 import { appendMemory, projectPath } from '../../tool-memory/lib/storage.js'
 import { atomicJson } from '../../muse/lib/mailbox.js'
+import { checkOutbound } from '../lib/outbound-policy.mjs'
 import { reflectionText, validateReflection } from '../lib/reflection.mjs'
 
 const { values: args } = parseArgs({
@@ -59,6 +60,11 @@ try {
   habits = report.patterns?.map(p => `${p.habit}（${p.ratio} 个项目）`).join('; ') ?? ''
 } catch {}
 const input = JSON.stringify({ memory, projectMemory, goal, recent, userCrossProjectHabits: habits })
+if (checkOutbound({ channel: 'session-inject', payload: input }).decision === 'deny') {
+  record('reflection deferred: credential material in input; content withheld')
+  console.log('reflect: deferred; sensitive input withheld')
+  process.exit(0)
+}
 const fingerprint = createHash('sha256').update(input).digest('hex')
 const statePath = join(home, 'muse', 'reflection', createHash('sha256').update(args.session).digest('hex') + '.json')
 let previous = {}

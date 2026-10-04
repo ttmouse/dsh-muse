@@ -21,7 +21,7 @@
 
 ## 已知的连带风险
 
-- 写入过 `muse/intent` 的会话，在**未装 muse 的**运行时上 resume 会被持久化格式守卫拒绝（unknown event type）。修复：删掉 session.jsonl 里含 `muse/intent` 的行（丢授权记录，目标保留）。
+- 旧版本写入过必需 `muse/intent` 事件的会话，可能被宿主持久化格式守卫拒绝（unknown event type），即使安装插件也不能保证加载。新版工具改用绑定人类输入的授权 sidecar，不再写入这些事件。旧日志不得自动改写；迁移需要先备份并单独确认丢失授权记录的范围。
 - pnpm 装 git 依赖不跑 `prepack` 脚本：依赖 prepack 生成文件的插件（如 openviking memory-plugin 的 `shared/`）装出来是残缺的，会让整个 `dsh web` 启动崩溃。修复：手动跑 sync 脚本补文件，或钉住能完整构建的版本。
 - peer 版本长期方案：给 muse 的 peer 声明加 `|| 0.2.0-rc.2`，免豁免——但需先完整回归再宣称兼容。
 
@@ -29,5 +29,5 @@
 
 - `dsh --profile muse-scratch --from-default-profile web` 创建模板 profile
 - `dsh plugin --profile muse-scratch add <包路径>` 装两个包即完成——**web 模板自带 goal 家族**，无需手动加 goal 组合行
-- 包自带 `dsh.bundle.patch` 元数据自动插入组合（dump-config 验证 muse/tool-muse 在组合树中）
+- 包自带 `dsh.bundle.patch` 元数据自动插入组合（dump-config 验证 muse/tool-muse 在组合树中）；这只证明配置存在，不能替代启动及工具列表验证
 - 坑：不要手动往 patch 里再写一遍 insert，会与包元数据重复

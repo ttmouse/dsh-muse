@@ -1,16 +1,28 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
 import Loader from '@deepseek-ai/cordis-plugin-loader'
 import AgentRegistry from '@deepseek-ai/dsh-agent'
 import type { Agent, AgentStatus, Inbox, InboxTarget } from '@deepseek-ai/dsh-agent'
 import { createUserMessage, ToolCallId } from '@deepseek-ai/dsh-llm'
 import type { MessageSource } from '@deepseek-ai/dsh-llm'
-import { latestAutonomy, MuseIntentError } from '@deepseek-ai/dsh-muse'
+import { agentAutonomy, latestAutonomy, MuseIntentError } from '@deepseek-ai/dsh-muse'
 import { Session, SessionId } from '@deepseek-ai/dsh-session'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import type { ToolExecutionResult } from '@deepseek-ai/dsh-tools'
 import * as toolMuse from '../src/index.ts'
+
+let temporaryHome: string
+const originalHome = process.env.DSH_HOME
+beforeEach(() => { temporaryHome = mkdtempSync(join(tmpdir(), 'muse-authority-')); process.env.DSH_HOME = temporaryHome })
+afterEach(() => {
+  if (originalHome === undefined) delete process.env.DSH_HOME
+  else process.env.DSH_HOME = originalHome
+  rmSync(temporaryHome, { recursive: true, force: true })
+})
 
 const testToolSignal = new AbortController().signal
 
@@ -109,6 +121,7 @@ function openTurn(stub: StubAgent, source: MessageSource, text = 'prompt'): numb
 }
 
 async function harness() {
+  process.env.DSH_HOME = mkdtempSync(join(tmpdir(), 'muse-intent-'))
   const ctx = new Context()
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(AgentRegistry)
@@ -153,12 +166,12 @@ describe('muse_autonomy tool', () => {
     expect(first.isError).toBe(false)
     if (first.isError) throw new Error('expected muse_autonomy success')
     expect(first.value).toEqual({ autonomy: true })
-    expect(latestAutonomy(root.session.snapshotEvents())).toBe(true)
+    expect(agentAutonomy(root.agent)).toBe(true)
 
     const second = await execute(ctx, { autonomy: false }, root.agent)
     expect(second.isError).toBe(false)
     if (second.isError) throw new Error('expected muse_autonomy success')
-    expect(latestAutonomy(root.session.snapshotEvents())).toBe(false)
+    expect(agentAutonomy(root.agent)).toBe(false)
   })
 
   it('rejects non-human sources, non-root agents, and driverless calls', async () => {
@@ -168,7 +181,7 @@ describe('muse_autonomy tool', () => {
     openTurn(root, { kind: 'plugin', plugin: 'tool-muse-test' })
     const nonHuman = await execute(ctx, { autonomy: true }, root.agent)
     expect(nonHuman.isError).toBe(true)
-    expect(latestAutonomy(root.session.snapshotEvents())).toBeUndefined()
+    expect(agentAutonomy(root.agent)).toBeUndefined()
 
     /* A child agent is never a valid grantor even with human text. */
     const child = stubAgent(`muse-tool-child-${Math.random()}`)
@@ -176,12 +189,12 @@ describe('muse_autonomy tool', () => {
     openTurn(child, { kind: 'user' })
     const childResult = await execute(ctx, { autonomy: true }, child.agent, root.agent)
     expect(childResult.isError).toBe(true)
-    expect(latestAutonomy(child.session.snapshotEvents())).toBeUndefined()
+    expect(agentAutonomy(child.agent)).toBeUndefined()
 
     /* No open turn means no driver boundary at all. */
     const driverless = await execute(ctx, { autonomy: true }, root.agent)
     expect(driverless.isError).toBe(true)
-    expect(latestAutonomy(root.session.snapshotEvents())).toBeUndefined()
+    expect(agentAutonomy(root.agent)).toBeUndefined()
   })
 
   it('rejects closed turns, eventless sessions, and agentless calls', async () => {
@@ -199,6 +212,19 @@ describe('muse_autonomy tool', () => {
 
     const agentless = await execute(ctx, { autonomy: true })
     expect(agentless.isError).toBe(true)
+  })
+
+  it('blocks all tools on an idea-only turn and refuses automatic routine management', async () => {
+    const { ctx, root } = await harness()
+    openTurn(root, { kind: 'muse', trigger: 'idea', deliveryId: 'proposal-proof' }, 'You could ask me to do X')
+    ctx.tools.register({ name: 'proposal_action', description: 'test action', parameters: {}, output: {
+      schema: { type: 'object', additionalProperties: false, properties: {} }, render: () => [],
+    }, execute: async () => { throw new Error('must not execute') } } as never)
+    const action = await ctx.agents.withInitiator(root.agent, () => ctx.tools.execute({ signal: testToolSignal, callId: ToolCallId('proposal-action'), name: 'proposal_action', arguments: {}, agent: root.agent }))
+    expect(action.isError).toBe(true)
+    const routine = await ctx.agents.withInitiator(root.agent, () => ctx.tools.execute({ signal: testToolSignal, callId: ToolCallId('proposal-routine'), name: 'muse_routine', arguments: { operation: 'create', title: 'bad', prompt: 'bad', every_seconds: 600 }, agent: root.agent }))
+    expect(routine.isError).toBe(true)
+    expect(agentAutonomy(root.agent)).toBeUndefined()
   })
 
   it('presents the call card from the args', async () => {

@@ -10,7 +10,7 @@ Two DSH plugins + a set of experience recipes that replicate the core feel of [M
 
 | Piece | What it does |
 |---|---|
-| [`muse/`](muse/) — `@deepseek-ai/dsh-muse` | Persists your autonomy grant as a `muse/intent` session event; a keeper re-arms disarmed active goals on session resume, so long-running goals survive process restarts |
+| [`muse/`](muse/) — `@deepseek-ai/dsh-muse` | Persists your grant with proof of the original human message; a keeper re-arms disarmed active goals on session resume, so long-running goals survive process restarts |
 | [`tool-muse/`](tool-muse/) — `@deepseek-ai/dsh-tool-muse` | The `muse_autonomy` model tool: only a direct human request can grant or revoke autonomy; auto-continuations and subagents are always rejected |
 | [`tool-memory/`](tool-memory/) — `@deepseek-ai/dsh-tool-memory` | `memory_save` tool + per-turn memory injection over a human-editable plain-text memory file (`~/.dsh/memories/main.md`) — the "gets smarter over time" piece |
 | [`docs/`](docs/) | Mechanism analysis, proactivity design (event-driven + speak/not-speak gate), install notes, release checklist |
@@ -29,7 +29,7 @@ dsh plugin --profile web add <published-package-or-git-url>   # both packages
 Developing from a clone (verified on a fresh `git clone`):
 
 ```bash
-pnpm install && pnpm build && pnpm -r test   # 24 tests
+pnpm install && pnpm build && pnpm -r test && pnpm test:timers
 ```
 
 Then add both bundles to your profile's `dsh.profile.bundles` list, after the goal family. Packages carry their own `dsh.bundle.patch` metadata, so the plugin panel recognizes them as profile-level plugins. If your runtime version differs from the peer range, grant a per-profile compatibility exemption (`compatibility.json`).
@@ -62,8 +62,10 @@ A ready-made composition example lives at [`muse.cordis.yml`-style bundles](docs
 
 ## Status
 
-Core loop is implemented and tested (22/22 tests, 100% coverage on both packages, end-to-end restart verification with real AgentLoop + JSONL persistence). Known limitations are documented in [docs/gaps.md](docs/gaps.md) — notably: proactive triggers are time/heartbeat-based today; event-source ingress (webhook/file-watch → wake) is the next milestone.
+The timer-first loop has package and CLI integration tests, including real AgentLoop + JSONL cold recovery. Current work focuses on bounded progress in the same conversation, waiting/completion state and quiet reflection; external events and other conversations are deferred. See [docs/timer-first.md](docs/timer-first.md) for behavior, verification and remaining limits.
 
 ## License
 
 MIT
+
+[Timer-first progress loop / 定时推进闭环](docs/timer-first.md) — same-session routines, waiting/completion state, native cold wake, non-human mailbox delivery and proposal-only reflection.

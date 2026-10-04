@@ -8,7 +8,7 @@
 launchd / cron（每 1 分钟）
   → gate.mjs：确定性检查（MUSE-SIGNAL.md 信号文件 / 自定义规则）
       ├─ 无信号 → 退出。零成本、零痕迹、主线完全安静
-      └─ 有信号 → 经 DSH API 注入主线对话，agent 醒来处理
+      └─ 有信号 → 先进入本地持久 mailbox；原生插件核验授权后，以非人类来源投递主线
 ```
 
 ## 用法
@@ -28,21 +28,11 @@ node gate.mjs --session <sessionId> [--url http://127.0.0.1:3080] [--rules rules
 
 - `--dry-run`：只打印将注入的内容，不真正调用。
 
-## 鉴权说明（重要）
+## 投递与鉴权
 
-脚本从 owner-only 的 `~/.dsh/.credentials.yaml`（`client-connection/browser-session` 记录）读取本地浏览器会话密钥，按 DSH 的 cookie 签名方案（HMAC-SHA256）自铸凭证。**凭证不出本机、不落盘到别处**；脚本必须以同一 OS 用户运行（这正是凭证文件 600 权限的边界）。
+新版 gate 不调用 `session/prompt`。共享客户端的 `injectPrompt` 写入 `$DSH_HOME/muse/notices/`，原生插件在同一会话空闲且自治授权有效时入队，并先刷盘宿主收件箱再确认投递。`queued` 只代表已持久化待办，不代表 agent 已处理。
 
-## wire 契约（供调试）
-
-```
-POST {url}/api/session/prompt
-body: { type: "client-request", rpcId: <uuid>, method: "session/prompt",
-        payload: { args: { _request: { sessionId, mode: "queue",
-                                       content: [{ type: "text", text }] } } } }
-Cookie: dsh-auth-<b64url(sha256(authority))>=v1.<b64url(json payload)>.<b64url(hmac)>
-```
-
-实测路径：404 = 鉴权已过但路径/信封不对；401 = cookie 无效。
+只读会话查询仍可使用回环 RPC 和本机签名 cookie。凭据不进入模型上下文。反思的 idea 消息使用非人类来源，工具执行由硬性门禁拒绝。
 
 ## launchd 模板（macOS）
 
@@ -66,17 +56,9 @@ Cookie: dsh-auth-<b64url(sha256(authority))>=v1.<b64url(json payload)>.<b64url(h
 
 `launchctl load ~/Library/LaunchAgents/com.dsh-muse.gate.plist` 后即生效。Linux 用 cron 等价：`* * * * * node /path/to/gate.mjs --session ...`。
 
-## 已验证
+## 验证
 
-- 静默分支：无信号 → 零输出退出
-- 开口分支：信号文件 → `would inject`（dry-run）
-- 真实注入：信号 → `injected` → 主线会话收到 `[muse-gate]` 消息（本仓库开发过程中实测）
-
-## wire 契约补充（0.1.5-rc.2 实测）
-
-- `session/prompt` 的 args 字段名是 `request`（`session/list` 是 `_request`）——共享客户端会从网关报错里自动学习正确字段名
-- request 里需要 `requestId`（uuid）
-- 共享模块在 `examples/lib/dsh-client.mjs`：mintCookie / callRpc / injectPrompt / llmJson，reflect 脚本复用
+`pnpm test:timers` 覆盖静默、敏感内容在判断前拒绝、正常信号持久排队与 dry-run 不消费信号。原生投递、失败重试和重启恢复见 muse 包测试。运行环境未加载新版插件时，待办保留而不会伪装成人类消息。
 
 ## 连接器 source（P1）与敏感过滤（P5）
 

@@ -8,12 +8,12 @@ import z from 'schemastery'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 /* Empty type imports carry the Context merges for agent events and ctx.goals. */
 import type {} from '@deepseek-ai/dsh-goal'
-import { latestAutonomy } from './domain.ts'
-import { museSessionEvents } from './session-events.ts'
+import { agentAutonomy } from './intent-store.ts'
 import { MuseRoutines } from './routines.ts'
 
 export { latestAutonomy, MUSE_INTENT_VERSION, museIntentChange, MuseIntentError } from './domain.ts'
 export { museSessionEvents } from './session-events.ts'
+export { agentAutonomy, recordAutonomy } from './intent-store.ts'
 export { MuseRoutines, nextOccurrence } from './routines.ts'
 export type { Routine, RoutineRequest } from './routines.ts'
 export type { MuseIntentChange } from './types.ts'
@@ -24,9 +24,8 @@ export const inject = ['agents', 'goals', 'sessions']
 /** Plugin configuration. */
 export interface Config {
   /**
-   * Autonomy applied to sessions whose log records no explicit
-   * `muse/intent` decision. Default `false`: mounting the plugin alone
-   * never grants standing autonomy.
+   * Deprecated compatibility field; ignored. Deployment configuration
+   * cannot grant standing autonomy.
    */
   defaultAutonomy: boolean
   routinePollSeconds?: number
@@ -52,7 +51,9 @@ export function apply(ctx: Context, config: Config): void {
   const rearm = (agent: Agent): void => {
     if (handled.has(agent)) return
     // Deployment configuration never substitutes for a direct human grant.
-    const autonomy = latestAutonomy(museSessionEvents(agent.session)) ?? false
+    let autonomy = false
+    try { autonomy = agentAutonomy(agent) ?? false }
+    catch { ctx.logger.warn('Muse authorization could not be verified; continuation remains disarmed'); return }
     if (!autonomy) return
     handled.add(agent)
 

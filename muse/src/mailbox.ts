@@ -1,5 +1,5 @@
 /** Local durable mailbox. Timer scripts never impersonate a human RPC request. */
-import { mkdirSync, readFileSync, writeFileSync, renameSync, existsSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync, renameSync, existsSync, openSync, fsyncSync, closeSync, linkSync, unlinkSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { homedir } from 'node:os'
 import { createHash, randomUUID } from 'node:crypto'
@@ -9,8 +9,12 @@ export function museHome(): string { return join(process.env.DSH_HOME ?? join(ho
 export function atomicJson(path: string, value: unknown): void {
   mkdirSync(dirname(path), { recursive: true, mode: 0o700 })
   const temporary = `${path}.${randomUUID()}.tmp`
-  writeFileSync(temporary, JSON.stringify(value, null, 2) + '\n', { flag: 'wx', mode: 0o600 })
+  const descriptor = openSync(temporary, 'wx', 0o600)
+  try { writeFileSync(descriptor, JSON.stringify(value, null, 2) + '\n'); fsyncSync(descriptor) }
+  finally { closeSync(descriptor) }
   renameSync(temporary, path)
+  const directory = openSync(dirname(path), 'r')
+  try { fsyncSync(directory) } finally { closeSync(directory) }
 }
 
 export interface MuseNotice {
@@ -31,9 +35,14 @@ export function queueNotice(sessionId: string, text: string, kind: MuseNotice['k
   if (existsSync(path)) return { id, queued: false }
   const notice: MuseNotice = { version: 1, id, sessionId, kind, text: text.trim(), createdAt: Date.now() }
   mkdirSync(dirname(path), { recursive: true, mode: 0o700 })
-  // O_EXCL publishes once, even when two timer processes race.
-  try { writeFileSync(path, JSON.stringify(notice) + '\n', { flag: 'wx', mode: 0o600 }) }
+  // Publish a fully fsynced record atomically, without replacing a prior acknowledgment.
+  const prepared = `${path}.${randomUUID()}.pending`
+  atomicJson(prepared, notice)
+  try { linkSync(prepared, path) }
   catch (error) { if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error; return { id, queued: false } }
+  finally { unlinkSync(prepared) }
+  const directory = openSync(dirname(path), 'r')
+  try { fsyncSync(directory) } finally { closeSync(directory) }
   return { id, queued: true }
 }
 

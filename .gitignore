@@ -1,5 +1,7 @@
 node_modules/
 lib/
+!examples/lib/
+!examples/lib/*.mjs
 *.tsbuildinfo
 .DS_Store
 examples/gate/local-config.env

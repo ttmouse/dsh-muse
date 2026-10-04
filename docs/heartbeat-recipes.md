@@ -1,5 +1,7 @@
 # 静默心跳 / 主动汇报：可复现的调度示例
 
+> 新任务优先使用 [原生定时闭环](timer-first.md)，支持重启恢复、预算和完成/等待状态。以下保留旧 schedule 示例供比较。
+
 > 本页给出两种把「唤醒与打扰分离」跑起来的方式。共同语义：**醒来先检查，有真正值得说的事才开口；否则只记日志，保持沉默。**
 
 ## 方式一：会话内 schedule（最简单，有唤醒卡片）
@@ -32,12 +34,10 @@ launchd / cron（每 1 分钟）
       ├─ 不满足 → 退出，零痕迹
       └─ 满足 → （可选）廉价 LLM API 判断「值得打扰吗」
           ├─ 不值得 → 退出，零痕迹
-          └─ 值得 → 调 DSH webserver 的 sessions/prompt RPC 注入主线对话
+          └─ 值得 → 持久化本地 mailbox，由插件以非人类来源投递主线
 ```
 
-注入端点：`POST http://127.0.0.1:<port>/api/rpc`，方法 `sessions/prompt`，
-服务端即 `agent.followup(message)`（见 deepseek-harness `packages/host/apiproxy/src/api-proxy.ts`）。
-回环鉴权 token 的定位方法与最小注入脚本见 `examples/gate/`（开发中）。
+投递采用 `examples/lib/dsh-client.mjs` 的本地 mailbox。只读会话查询使用回环 RPC；不再通过 `session/prompt` 将定时消息伪装成人类输入。
 
 ## 判断门怎么写（两条分支都要测）
 
@@ -69,6 +69,6 @@ schedule_create:
 ```
 
 要点：
-- 目标本体可以处于 blocked（省轮次），推进由调度承载——**调度醒来做一个单元**，替代 goal 轮次空转
+- 绑定 goal 的定时任务只做复查；paused/blocked/disarmed/轮数耗尽时不得额外推进。独立任务使用原生 routine，由直接人类请求授权其范围和预算。
 - 无事可做的唤醒只留日志静默（判断门语义）
 - 需要用户决策/凭据时才简短汇报

@@ -5,7 +5,7 @@
  * Runs on a fast timer (launchd/cron, every minute). Deterministic checks run
  * OUTSIDE any DSH session: when nothing passes, the main conversation never
  * hears about it — no wake, no card, no trace. Only a passing signal is
- * injected into the target session via the DSH webserver `session.prompt` RPC.
+ * staged in a durable local mailbox; the native plugin delivers a non-human message.
  *
  * Usage:
  *   node gate.mjs --session <sessionId> [--url http://127.0.0.1:3080]
@@ -22,10 +22,11 @@
  */
 import { existsSync, unlinkSync, readFileSync, appendFileSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { createHash, randomUUID } from 'node:crypto'
+import { createHash } from 'node:crypto'
 import { homedir } from 'node:os'
 import { parseArgs } from 'node:util'
-import { callRpc, llmJson, logDecision as sharedLog } from '../lib/dsh-client.mjs'
+import { injectPrompt, llmJson, logDecision as sharedLog } from '../lib/dsh-client.mjs'
+import { fileURLToPath } from 'node:url'
 import { checkOutbound } from '../lib/outbound-policy.mjs'
 import { pollImap } from './sources/imap.mjs'
 import { pollJxaCalendar } from './sources/jxa-calendar.mjs'
@@ -46,7 +47,7 @@ if (!args['session']) { console.error('gate: --session <sessionId> is required')
 
 // ---- rules ----
 // launchd runs with cwd=/ — derive the project root from this script's location instead
-const scriptRoot = new URL('../../', import.meta.url).pathname  // examples/gate → repo root
+const scriptRoot = fileURLToPath(new URL('../../', import.meta.url))
 const projectDir = process.env.MUSE_PROJECT_DIR ?? scriptRoot
 const rules = args['rules'] ? JSON.parse(readFileSync(resolve(args['rules']), 'utf8')) : []
 const signalPath = join(projectDir, 'MUSE-SIGNAL.md')
@@ -117,7 +118,7 @@ for (const rule of rules) {
       if (!password) { logDecision(`imap skipped: no password for ${rule.user}`); continue }
       for (const m of await pollImap({ ...rule, password })) {
         const text = `${m.subject}（来自 ${m.from}）`
-        if (isSensitive(text)) { logDecision(`sensitive dropped: ${text.slice(0, 60)}`); continue }
+        if (isSensitive(text)) { logDecision('sensitive item dropped'); continue }
         hits.push({ message: text, consume: undefined })
       }
       if (rule.markSeen) { /* seen flags already set by pollImap */ }
@@ -126,7 +127,7 @@ for (const rule of rules) {
   if (rule.type === 'http-poll') {
     try {
       for (const hit of await pollHttp(rule)) {
-        if (hit.sensitive) { logDecision(`sensitive dropped (never reaches the agent): ${hit.message.slice(0, 60)}`); continue }
+        if (hit.sensitive) { logDecision('sensitive item dropped before model context'); continue }
         hits.push({ message: hit.message })
       }
     } catch (error) { console.error(`gate: poll failed: ${String(error).slice(0, 160)}`) }
@@ -138,51 +139,20 @@ if (existsSync(signalPath)) {
   const first = text.split('\n').map(l => l.trim()).find(l => l && !l.startsWith('#')) ?? 'Signal'
   hits.push({ message: first, consume: signalPath })
 }
-// ---- memory self-heal: collapse duplicate headers/entries written by pre-fix runtimes ----
-function normalizeMemory(text) {
-  const seen = new Set()
-  const body = []
-  for (const raw of text.split('\n')) {
-    const line = raw.replace(/\s+$/, '')
-    if (line.startsWith('# Muse memory') || (line.startsWith('>') && line.includes('Human-editable'))) continue
-    if (line === '' && (body.at(-1) === '' || body.length === 0)) continue
-    if (line !== '' && line !== '…(older memories trimmed)') {
-      if (seen.has(line)) continue
-      seen.add(line)
-    }
-    body.push(line)
-  }
-  while (body.at(-1) === '') body.pop()
-  return ['# Muse memory', '', '> Human-editable. One `- [timestamp] (kind) content` line per memory. The agent appends via memory_save and reads this file every turn.', '', ...body, ''].join('\n')
-}
-
-try {
-  const memPath = join(process.env.DSH_HOME ?? join(homedir(), '.dsh'), 'memories', 'main.md')
-  if (existsSync(memPath)) {
-    const raw = readFileSync(memPath, 'utf8')
-    const fixed = normalizeMemory(raw)
-    if (fixed !== raw) writeFileSync(memPath, fixed, { mode: 0o600 })
-  }
-} catch {}
-
+// Memory maintenance uses its own lock; the gate never rewrites memory files.
 if (hits.length === 0) process.exit(0) // ← the whole point: silence, zero trace
 
 // ---- judge gate (P3): a cheap LLM decides whether this is worth interrupting ----
-const message = hits.map(h => h.message).join('\n')
+// All inputs, including local timer signals, pass the same sensitive precheck.
+const safeHits = hits.filter(hit => !isSensitive(hit.message))
+if (safeHits.length === 0) process.exit(0)
+const message = safeHits.map(h => h.message).join('\n')
 
 // ---- F3.1 pre-LLM credential gate (unconditional, before judge and before any log) ----
 const exfil = checkOutbound({ channel: 'session-inject', payload: message })
 if (exfil.decision === 'deny') {
   logDecision(`F3.1 blocked: credential material in outbound candidate — content withheld, never sent to LLM or logs`)
-  for (const h of hits) { try { unlinkSync(h.consume) } catch {} }
   console.log('gate: blocked by outbound policy F3.1 (credential material)')
-  process.exit(0)
-}
-
-// ---- F3 pre-LLM filter: sensitive content never enters the judge LLM call ----
-if (isSensitive(message)) {
-  logDecision('skip: sensitive content (OTP/reset) filtered before judge — never sent to LLM')
-  for (const h of hits) { try { unlinkSync(h.consume) } catch {} }
   process.exit(0)
 }
 
@@ -204,7 +174,8 @@ async function judgeWorthy(message) {
     message,
     args['judge-model'],
   )
-  return { worth_saying: Boolean(verdict.worth_saying), reason: String(verdict.reason ?? '') }
+  if (typeof verdict.worth_saying !== 'boolean') throw new Error('judge must return a boolean worth_saying')
+  return { worth_saying: verdict.worth_saying, reason: String(verdict.reason ?? '') }
 }
 
 function logDecision(line) { sharedLog(projectDir, 'gate-decisions.log', line) }
@@ -220,15 +191,10 @@ if (outbound.decision === 'deny') {
 
 // ---- inject via session.prompt RPC ----
 try {
-  await callRpc(args['url'], 'session/prompt', {
-    requestId: randomUUID(),
-    sessionId: args['session'],
-    mode: 'queue',
-    content: [{ type: 'text', text: `[muse-gate] ${message}` }],
-  })
+  await injectPrompt(args['url'], args['session'], `[muse-gate] ${message}`)
 } catch (error) {
   console.error(`gate: inject failed: ${String(error).slice(0, 300)}`)
   process.exit(1)
 }
-for (const h of hits) { try { unlinkSync(h.consume) } catch {} }
-console.log(`gate: injected (${hits.length} signal) → ${args['session']}`)
+for (const h of safeHits) { try { if (h.consume) unlinkSync(h.consume) } catch {} }
+console.log(`gate: queued (${safeHits.length} signal) → ${args['session']}`)

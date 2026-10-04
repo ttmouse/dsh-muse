@@ -7,7 +7,7 @@ import { SessionId } from '@deepseek-ai/dsh-session'
 import { readdirSync, readFileSync, existsSync, appendFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { createHash, randomUUID } from 'node:crypto'
-import { latestAutonomy } from './domain.ts'
+import { agentAutonomy } from './intent-store.ts'
 import { museSessionEvents } from './session-events.ts'
 import { atomicJson, museHome, readNotice } from './mailbox.ts'
 
@@ -34,6 +34,7 @@ export interface Routine {
   goalId?: string
   lastMessageId?: string
   lastAcceptedAt?: number
+  lastResult?: { deliveryId: string; status: 'progress' | 'waiting' | 'done'; summary: string; nextStep: string; recordedAt: number }
 }
 
 interface RoutineFile {
@@ -92,13 +93,34 @@ export class MuseRoutines extends Service {
 
   list(agent: Agent): Routine[] { return this.read(agent.session.id).routines.map(r => ({ ...r })) }
 
+  private requireHuman(agent: Agent, messageId: string): void {
+    if (this.ctx.agents.get(agent.id) !== agent || this.ctx.agents.currentInitiator() !== agent
+      || agent.status !== 'running' || !this.ctx.agents.roots().includes(agent)) throw new Error('Routine management requires a direct human driver')
+    const events = museSessionEvents(agent.session)
+    for (let index = events.length - 1; index >= 0; index--) {
+      const e = events[index]!
+      if (e.type === 'turn/end') break
+      if (e.type === 'turn/start') {
+        if (events.slice(index + 1).some(item => item.type === 'user/message' && item.data.id === messageId && item.data.source.kind === 'user')) return
+        break
+      }
+    }
+    throw new Error('Routine management requires a direct human request in the current turn')
+  }
+
   /** Only tool-muse's direct-human boundary calls this management surface. */
   create(agent: Agent, request: RoutineRequest, grantMessageId: string): Routine {
+    this.requireHuman(agent, grantMessageId)
     if (!Number.isSafeInteger(request.everySeconds) || request.everySeconds < 300) throw new Error('Interval must be at least 300 seconds')
     if (!Number.isSafeInteger(request.maxRuns) || request.maxRuns < 1 || request.maxRuns > 1000) throw new Error('max_runs must be 1..1000')
     if (!request.title.trim() || !request.prompt.trim() || request.prompt.length > 8000) throw new Error('Routine requires a title and a bounded prompt')
-    if (latestAutonomy(museSessionEvents(agent.session)) !== true) throw new Error('Ask the human to grant muse_autonomy before creating a routine')
-    const file = this.read(agent.session.id, { ...agent.options })
+    if (agentAutonomy(agent) !== true) throw new Error('Ask the human to grant muse_autonomy before creating a routine')
+    // Persist only routing hints, never arbitrary adapter/setup configuration.
+    const { provider, model, reasoningEffort, maxTokens } = agent.options
+    const file = this.read(agent.session.id, {
+      ...(provider === undefined ? {} : { provider }), ...(model === undefined ? {} : { model }),
+      ...(reasoningEffort === undefined ? {} : { reasoningEffort }), ...(maxTokens === undefined ? {} : { maxTokens }),
+    })
     if (file.routines.filter(r => r.enabled).length >= 8) throw new Error('At most eight enabled routines per session')
     const goal = request.bindGoal ? this.ctx.goals.get(agent) : undefined
     if (request.bindGoal && (!goal || goal.phase !== 'active')) throw new Error('A goal-bound routine requires an active goal')
@@ -114,6 +136,8 @@ export class MuseRoutines extends Service {
   }
 
   setEnabled(agent: Agent, id: string, enabled: boolean, grantMessageId: string): Routine {
+    this.requireHuman(agent, grantMessageId)
+    if (enabled && agentAutonomy(agent) !== true) throw new Error('Standing autonomy is revoked')
     const file = this.read(agent.session.id)
     const routine = file.routines.find(r => r.id === id)
     if (!routine) throw new Error('Routine not found in this session')
@@ -124,6 +148,32 @@ export class MuseRoutines extends Service {
     return { ...routine }
   }
 
+  /** A running routine may record an outcome; it cannot grant or extend permissions. */
+  recordResult(agent: Agent, deliveryId: string, status: 'progress' | 'waiting' | 'done', summary: string, nextStep: string, waitSeconds = 0): void {
+    if (!['progress', 'waiting', 'done'].includes(status) || !summary.trim() || summary.length > 4000 || nextStep.length > 2000
+      || !Number.isSafeInteger(waitSeconds) || waitSeconds < 0 || waitSeconds > 86400) throw new Error('Invalid routine result')
+    if (this.ctx.agents.get(agent.id) !== agent || this.ctx.agents.currentInitiator() !== agent || agent.status !== 'running'
+      || !this.ctx.agents.roots().includes(agent)) throw new Error('Routine results require the live root driver')
+    const events = museSessionEvents(agent.session)
+    let current = events.length
+    for (let i = events.length - 1; i >= 0; i--) {
+      if (events[i]?.type === 'turn/end') break
+      if (events[i]?.type === 'turn/start') { current = i; break }
+    }
+    const input = events.slice(current).find(e => e.type === 'user/message' && e.data.source.kind === 'muse'
+      && e.data.source.trigger === 'routine' && e.data.source.deliveryId === deliveryId)
+    if (!input) throw new Error('Result must belong to the current timed routine turn')
+    const file = this.read(agent.session.id)
+    const routine = file.routines.find(r => r.lastMessageId === deliveryId)
+    if (!routine) throw new Error('Routine delivery not found')
+    if (routine.lastResult?.deliveryId === deliveryId) return
+    routine.lastResult = { deliveryId, status, summary: summary.trim(), nextStep: nextStep.trim(), recordedAt: Date.now() }
+    if (status === 'waiting') routine.nextRunAt = Math.max(routine.nextRunAt, Date.now() + Math.max(waitSeconds, routine.everySeconds) * 1000)
+    if (status === 'done') routine.enabled = false
+    atomicJson(this.path(file.sessionId), file)
+    this.audit(`routine-result ${routine.id} status=${status}`)
+  }
+
   private audit(line: string): void {
     if (!existsSync(this.root)) return
     appendFileSync(join(this.root, 'activity.log'), `${new Date().toISOString()} ${line}\n`, { mode: 0o600 })
@@ -131,7 +181,7 @@ export class MuseRoutines extends Service {
 
   private authorized(agent: Agent, routine?: Routine): boolean {
     const events = museSessionEvents(agent.session)
-    if (latestAutonomy(events) !== true) return false
+    if (agentAutonomy(agent) !== true) return false
     return routine === undefined || events.some(e => e.type === 'user/message'
       && e.data.id === routine.grantMessageId && e.data.source.kind === 'user')
   }
@@ -158,7 +208,8 @@ export class MuseRoutines extends Service {
             this.handles.push(handle)
             agent = handle.agent
           }
-          if (this.stopped || !this.ctx.agents.roots().includes(agent) || agent.status !== 'idle' || !this.authorized(agent)) continue
+          if (this.stopped || !this.ctx.agents.roots().includes(agent) || agent.status !== 'idle'
+            || agent.inbox.nextTurn.length || agent.inbox.nextStep.length || !this.authorized(agent)) continue
           // One unit per session per tick; late intervals collapse into one unit.
           const routine = file.routines.filter(r => r.enabled && r.runs < r.maxRuns && r.nextRunAt <= now).sort((a, b) => a.nextRunAt - b.nextRunAt)[0]!
           if (!this.authorized(agent, routine)) continue
@@ -169,7 +220,7 @@ export class MuseRoutines extends Service {
             // The goal driver owns execution; this routine is a scheduled review only.
           }
           const deliveryId = `muse-routine-${routine.id}-${routine.nextRunAt}`
-          const text = `[muse-routine: ${routine.title}]\n${routine.prompt}\n\nExecute one bounded work unit under existing permissions. Record concrete results and the next step. Do not create, resume, edit or change goal/autonomy grants. Ideas are proposals only. Report only a meaningful new result, a new blocker, or a required human decision; routine checks stay in the activity log.${routine.goalId ? '\nThis is a goal review; the goal-round-driver owns goal execution. Do not perform an extra goal round.' : ''}`
+          const text = `[muse-routine: ${routine.title}]\n${routine.prompt}\n\nPrevious outcome: ${JSON.stringify(routine.lastResult ?? null)}\nDelivery id: ${deliveryId}\nExecute one bounded work unit under existing permissions. Verify the result before claiming progress. Call muse_routine_result with this delivery id, status progress/waiting/done, concrete summary and next_step. Waiting can back off up to 24 hours; done ends future runs. Do not create, resume, edit or change goal/autonomy grants. Ideas are proposals only. Report only a meaningful new result, a new blocker, or a required human decision; routine checks stay in the activity log.${routine.goalId ? '\nThis is a goal review; the goal-round-driver owns goal execution. Do not perform an extra goal round.' : ''}`
           await agent.runMaintenance(async () => {
             // Management may have happened during a cold resume; refold before writing.
             const current = this.read(file.sessionId)
@@ -197,7 +248,8 @@ export class MuseRoutines extends Service {
           const notice = readNotice(path)
           if (notice.deliveredAt !== undefined) continue
           const agent = this.ctx.agents.get(SessionId(notice.sessionId))
-          if (!agent || agent.status !== 'idle' || !this.ctx.agents.roots().includes(agent) || !this.authorized(agent)) continue
+          if (!agent || agent.status !== 'idle' || agent.inbox.nextTurn.length || agent.inbox.nextStep.length
+            || !this.ctx.agents.roots().includes(agent) || !this.authorized(agent)) continue
           const deliveryId = `muse-notice-${notice.id}`
           await agent.runMaintenance(async () => {
             if (!this.authorized(agent)) return

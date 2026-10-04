@@ -22,6 +22,10 @@ importers:
         version: 3.2.7(@types/node@24.19.1)(jiti@2.7.0)
 
   muse:
+    dependencies:
+      '@deepseek-ai/dsh-llm':
+        specifier: ^0.2.0-rc.2
+        version: 0.2.0-rc.2(@deepseek-ai/cordis@4.0.4)
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.4

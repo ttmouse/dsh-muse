@@ -10,7 +10,7 @@
 
 | 组成 | 职责 |
 |---|---|
-| [`muse/`](muse/) — `@deepseek-ai/dsh-muse` | 把你的自治授权持久化为 `muse/intent` 会话事件；keeper 在会话恢复时重新武装已 disarm 的 active 目标，长期目标因此能跨进程重启延续 |
+| [`muse/`](muse/) — `@deepseek-ai/dsh-muse` | 把自治授权持久化并绑定原始人类消息；keeper 在会话恢复时重新武装已 disarm 的 active 目标，长期目标因此能跨进程重启延续 |
 | [`tool-muse/`](tool-muse/) — `@deepseek-ai/dsh-tool-muse` | `muse_autonomy` 模型工具：只有人类的直接请求能授予/撤销自治；自动续跑与子代理一律拒绝 |
 | [`tool-memory/`](tool-memory/) — `@deepseek-ai/dsh-tool-memory` | `memory_save` 工具 + 每 turn 记忆注入，存储为人类可编辑的纯文本（`~/.dsh/memories/main.md`）——「越用越懂你」的那一块 |
 | [`docs/`](docs/) | 机制分析、主动触发设计、安装踩坑、发布清单 |
@@ -46,8 +46,10 @@ dsh plugin --profile web add <已发布的包名或 git 地址>   # 两个包都
 
 ## 状态
 
-核心闭环已实现并验证（24/24 测试、双包 100% 覆盖、真实 AgentLoop + JSONL 持久化的跨重启端到端）。已知限制见 [docs/gaps.md](docs/gaps.md)——当前主动性基于时间心跳/闸门；事件源 ingress（webhook/文件监听 → 唤醒）是下一个里程碑。
+定时推进闭环已通过包测试和 CLI 集成测试，包含真实 AgentLoop + JSONL 冷恢复。当前重点是同一会话内有预算的持续推进、等待/完成状态和静默反思；外部事件和其他会话暂缓。具体行为、验证与限制见 [docs/timer-first.md](docs/timer-first.md)。
 
 ## 许可
 
 MIT
+
+[Timer-first progress loop / 定时推进闭环](docs/timer-first.md) — same-session routines, waiting/completion state, native cold wake, non-human mailbox delivery and proposal-only reflection.

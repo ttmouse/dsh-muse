@@ -14,12 +14,13 @@ cat > "$PLIST" <<XML
   <key>ProgramArguments</key><array>
     <string>/opt/homebrew/bin/node</string>
     <string>$DIR/gate.mjs</string>
-    <string>--url</string><string>http://127.0.0.1:19387</string>
+    <string>--url</string><string>$MUSE_URL</string>
     <string>--session</string><string>$MUSE_SESSION_ID</string>
     <string>--rules</string><string>$DIR/local-rules.json</string>
     <string>--judge</string>
   </array>
   <key>StartInterval</key><integer>$SECS</integer>
+  <key>WorkingDirectory</key><string>$(cd "$DIR/../.." && pwd)</string>
   <key>WorkingDirectory</key><string>/Users/douba/Projects/dsh-muse</string>
   <key>RunAtLoad</key><true/>
   <key>StandardOutPath</key><string>/tmp/dsh-muse-gate.log</string>

@@ -12,17 +12,19 @@ import * as goalRoundDriver from '@deepseek-ai/dsh-goal-round-driver'
 import * as toolGoal from '@deepseek-ai/dsh-tool-goal'
 import { ToolCallId, createUserMessage, LlmAdapter } from '@deepseek-ai/dsh-llm'
 import type { GenerateOptions, StreamChunk } from '@deepseek-ai/dsh-llm'
-import { latestAutonomy } from '../src/domain.ts'
+import { agentAutonomy } from '../src/intent-store.ts'
 import * as muse from '../src/index.ts'
 import * as toolMuse from '../../tool-muse/src/index.ts'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import JsonlSessionPersistence from '@deepseek-ai/dsh-session-persistence-jsonl'
-import { SessionFormatUnsupportedError } from '@deepseek-ai/dsh-session-persistence'
 
 const roots: string[] = []
 const contexts: Context[] = []
+const priorHome = process.env.DSH_HOME
 
 afterEach(async () => {
+  if (priorHome === undefined) delete process.env.DSH_HOME
+  else process.env.DSH_HOME = priorHome
   await Promise.allSettled(contexts.splice(0).map(ctx => ctx.fiber.dispose()))
   for (const root of roots.splice(0)) await rm(root, { recursive: true, force: true })
 })
@@ -63,6 +65,7 @@ function text(value: string): StreamChunk[] {
 }
 
 async function mount(root: string, adapter: LlmAdapter): Promise<Context> {
+  process.env.DSH_HOME = join(root, 'dsh-home')
   const ctx = new Context()
   contexts.push(ctx)
   await mountAgentLoopTestDependencies(ctx)
@@ -91,6 +94,32 @@ async function waitForRounds(ctx: Context, sessionId: SessionId, rounds: number)
 }
 
 describe('Muse autonomy across a real process restart', () => {
+  it('cold-wakes a due routine after process restart with human proof and a non-human source', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'dsh-muse-timer-restart-'))
+    roots.push(root)
+    const sessionId = SessionId('muse-timer-restart-proof')
+    const first = await mount(root, new ScriptedAdapter([
+      toolCall('muse_autonomy', 'call_grant_timer', '{"autonomy":true}'),
+      toolCall('muse_routine', 'call_timer', '{"operation":"create","title":"proof","prompt":"Do one bounded proof unit","every_seconds":300,"max_runs":1}'),
+      text('TIMER REGISTERED'),
+    ]))
+    const created = await first.agents.create({ sessionId, agentOptions: { provider: 'mock', model: 'mock' } })
+    created.agent.followup(createUserMessage({ content: [{ type: 'text', text: 'Autonomously run a proof unit every five minutes, once; keep this timer after restart.' }], source: { kind: 'user' } }))
+    await created.agent.whenIdle()
+    const routine = first.museRoutines.list(created.agent)[0]
+    expect(routine).toBeDefined()
+    expect(created.agent.session.snapshotEvents().some(e => e.type === 'muse/intent')).toBe(false)
+    await first.fiber.dispose()
+    const second = await mount(root, new ScriptedAdapter([text('TIMER PROOF UNIT COMPLETE')]))
+    expect(second.agents.get(sessionId)).toBeUndefined()
+    await second.museRoutines.tick(routine!.nextRunAt)
+    const resumed = second.agents.get(sessionId)
+    expect(resumed).toBeDefined()
+    await resumed!.whenIdle()
+    expect(resumed!.session.snapshotEvents().some(e => e.type === 'user/message' && e.data.source.kind === 'muse' && e.data.source.trigger === 'routine')).toBe(true)
+    expect(second.museRoutines.list(resumed!)[0]).toMatchObject({ runs: 1, enabled: false })
+  })
+
   it('keeps advancing an armed goal after the whole context dies and resumes', async () => {
     const root = await mkdtemp(join(tmpdir(), 'dsh-muse-restart-'))
     roots.push(root)
@@ -115,37 +144,28 @@ describe('Muse autonomy across a real process restart', () => {
     }))
     await waitForRounds(first, sessionId, 1)
     await created.agent.whenIdle()
-    expect(latestAutonomy(created.agent.session.snapshotEvents())).toBe(true)
+    expect(agentAutonomy(created.agent)).toBe(true)
     const goal = first.goals.get(created.agent)
     expect(goal?.phase).toBe('active')
     await first.fiber.dispose()
 
     /* Epoch two: a fresh process resumes the same session. The keeper re-arms
      * the disarmed active goal from the durable intent, and round two runs.
-     * A host whose baked event vocabulary lacks `muse/intent` refuses the
-     * persisted log at resume instead — its persistence gate is build-time
-     * generated, and `Session.append` cannot mark a plugin event ignorable.
-     * That refusal is the documented standalone boundary, not a keeper bug. */
+     * The grant references a durable human message in a separate file; no
+     * unknown required event is introduced into the host's strict log. */
     const secondAdapter = new ScriptedAdapter([
       text('ROUND TWO PROGRESS'),
     ])
     const second = await mount(root, secondAdapter)
-    let resumed: Awaited<ReturnType<typeof second.agents.resume>>
-    try {
-      resumed = await second.agents.resume({
-        resumeSessionId: sessionId,
-        agentOptions: { provider: 'mock', model: 'mock' },
-      })
-    } catch (error: unknown) {
-      if (!(error instanceof SessionFormatUnsupportedError)) throw error
-      expect(String(error)).toContain('muse/intent')
-      return
-    }
+    const resumed = await second.agents.resume({
+      resumeSessionId: sessionId,
+      agentOptions: { provider: 'mock', model: 'mock' },
+    })
     await waitForRounds(second, sessionId, 2)
     await resumed.agent.whenIdle()
     const resumedGoal = second.goals.get(resumed.agent)
     expect(resumedGoal?.roundsStarted).toBe(2)
-    expect(latestAutonomy(resumed.agent.session.snapshotEvents())).toBe(true)
+    expect(agentAutonomy(resumed.agent)).toBe(true)
   })
 
   it('leaves a resumed goal disarmed when autonomy was never granted', async () => {

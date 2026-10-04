@@ -29,7 +29,7 @@
 
 ## 目标与节奏约定
 
-- 用户创建长期目标并表达节奏预期（如「每天」「两小时后」）时，同时用 schedule_create 建一条**目标专属调度**（prompt = 推进该目标的一个工作单元），多目标各走各的节奏——见 docs/heartbeat-recipes.md 的目标级专属日程。
+- 用户创建长期目标并表达节奏预期（如「每天」「两小时后」）时，优先用 muse_routine 建一条**有预算的专属定时任务**（前提是当前 turn 的直接人类授权与 muse_autonomy）；绑定已有目标时仅做 review，执行仍归 goal-round-driver，多目标各走各的节奏——见 docs/timer-first.md。外部事件和跨对话接入目前暂缓。
 
 ## 本机运行态（非仓库内容）
 

@@ -20,7 +20,22 @@ export function projectPath(home: string, cwd: string): string {
 export function withMemoryLock<T>(path: string, operation: () => T): T {
   mkdirSync(dirname(path), { recursive: true })
   const lock = `${path}.lock`
-  const descriptor = openSync(lock, 'wx', 0o600)
+  let descriptor: number
+  try { descriptor = openSync(lock, 'wx', 0o600) }
+  catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error
+    const prior = readFileSync(lock, 'utf8')
+    const owner = Number(prior)
+    if (!Number.isSafeInteger(owner) || owner <= 0) throw error
+    try { process.kill(owner, 0); throw error }
+    catch (probe) {
+      if ((probe as NodeJS.ErrnoException).code !== 'ESRCH') throw error
+      if (readFileSync(lock, 'utf8') !== prior) throw error
+      unlinkSync(lock)
+      descriptor = openSync(lock, 'wx', 0o600)
+    }
+  }
+  writeFileSync(descriptor, String(process.pid))
   try { return operation() }
   finally { closeSync(descriptor); unlinkSync(lock) }
 }
