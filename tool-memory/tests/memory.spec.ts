@@ -3,7 +3,8 @@ import { mkdtempSync, readFileSync, existsSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import type { Context } from '@deepseek-ai/cordis'
-import { apply, appendEntry, memoryFilePath, normalizeMemory, projectMemoryFilePath, readMemory, supersedeEntries } from '../src/index.js'
+import { apply, memoryFilePath, normalizeMemory, projectMemoryFilePath, readMemory, supersedeEntries } from '../src/index.js'
+import { appendMemory } from '../src/storage.js'
 
 type Tool = { name: string; execute: (args: never, exec: unknown) => Promise<unknown>; description: string }
 type PromptContext = { name: string; order: number; text: (ctx: { agent?: unknown }) => string }
@@ -104,8 +105,8 @@ describe('tool-memory', () => {
   })
 
   it('supersedeEntries moves matching old entries to archive and keeps the correction', () => {
-    appendEntry('用户的项目部署在 AWS', 'fact', memoryFilePath())
-    appendEntry('用户的项目已迁移到自托管服务器', 'fact', memoryFilePath())
+    appendMemory(memoryFilePath(), '用户的项目部署在 AWS', 'fact')
+    appendMemory(memoryFilePath(), '用户的项目已迁移到自托管服务器', 'fact')
     const moved = supersedeEntries('AWS', memoryFilePath())
     expect(moved).toBe(1)
     const text = readFileSync(memoryFilePath(), 'utf8')
