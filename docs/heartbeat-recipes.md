@@ -56,6 +56,8 @@ gate 每 2 分钟巡逻时检查未来 12 小时的日历事件。权限被拒�
 
 ## 目标级专属日程（Muse 式「每个目标有自己的节奏」）
 
+> **首选：`muse_routine` 工具**（muse 插件内置）——在授权 turn 里直接说「每 30 分钟推进一次，最多 24 次」，agent 调用 `muse_routine {operation:"create", every_seconds:1800, max_runs:24, prompt:"..."}`。带运行预算、pause/resume（需人类请求）、结果三态（progress/waiting/done）、重启恢复。以下 schedule_create 方式为不装 muse 时的替代。
+
 全局心跳之外，**每个长期目标可以绑一条专属调度**：到期唤醒时只推进这个目标的一个工作单元，多目标各走各的节奏。
 
 ```text
