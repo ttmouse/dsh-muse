@@ -27,6 +27,10 @@
 - 单包：`pnpm --filter <pkg> build|test`
 - 提交前 `git status` 确认 `local-config.env`、`*.log`、`.gate-state/` 未入库（见 .gitignore）
 
+## 目标与节奏约定
+
+- 用户创建长期目标并表达节奏预期（如「每天」「两小时后」）时，同时用 schedule_create 建一条**目标专属调度**（prompt = 推进该目标的一个工作单元），多目标各走各的节奏——见 docs/heartbeat-recipes.md 的目标级专属日程。
+
 ## 本机运行态（非仓库内容）
 
 - gate/reflect 由 launchd 托管：`examples/set-cadence-all.sh <gate秒> <reflect秒>` 调频
