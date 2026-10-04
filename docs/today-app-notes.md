@@ -35,3 +35,56 @@ JXA runner 明确处理「host busy / 执行超限」超时——系统自动化
 - [ ] gate 新增 `jxa-calendar` source：osascript 读未来 24h 日历事件 → 判断门 → 会前提醒（C2 的本机替代实现，无 OAuth）
 - [ ] source 规则支持 `permissionGuide` 文案字段；gate EPERM 时输出引导
 - [ ] 远期：凭证迁 keychain（暂缓，yaml 0600 够用）
+
+---
+
+## 5. 简报卡片体系（v1.21.3 深拆，对应「晚间简报」截图）
+
+### 5.1 三种简报 + 卡片流水线
+
+- 简报按**时段分三份**：morning / evening / health（weekly），各自独立 enabled + schedule（`briefSettings.status / schedule` 可单独开关与排程）。这印证我们「唤醒与打扰分离、目标级专属日程」的节奏设计：不是一条全局 cron，而是每类产出有自己的节拍。
+- 简报页 = **按日期组织的卡片流**（`opalToday.sectionTitle`：晨间简报 / 晚间简报 / 日记 / 健康报告；`todayV3` 按日加载、可「加载更早日期」）。
+- 卡片分两类，契约完全不同：
+  - **feed card（快照卡）**：agent 生成、整体推送、只读、下次生成整体替换。截图里的「晚间盘点」「口径决策点」「今晚最小动作」全是这种。
+  - **live widget（活卡片）**：钉在画布上、有持久 doc 状态、可点击/编辑/迁移（schemaVersion 迁移梯），由 automation 定时重跑（`liveWidget: {pageId, automationId, timezone, lastUpdateTime, nextRunAt}`，demo 里 nextRunAt=04:00 本地）。
+
+### 5.2 feed card 的内容契约（从 demo 源码提炼）
+
+每张卡就是一个数据对象 + 一个纯渲染函数，结构固定为：
+
+```
+eyebrow:   'WORK · 09:30'          // 域 · 时刻 的眉标
+title:     一句话判断（不是主题，是结论）
+description: 2-3 句展开：为什么是这个结论
+metric / metricLabel: 单个大数字（'3' + 'decisions ready'）
+items:    3 条左右的具体清单
+action / actionLabel: 把下一步转成一句用户口吻的话，塞进聊天输入框
+```
+
+关键机制：卡片 CTA 用 SDK `Action action='chat.composer.fill'`——**点击按钮不是执行，而是把一句现成的 prompt 填进 composer**（如 "Help me prepare the launch rehearsal."）。这正好是我们的全局不变量「想法只提议不执行」的产品化表达：卡片给判断和弹药，扣扳机永远由人在会话里完成。可用 action 目前仅三种：`chat.composer.fill` / `web.open` / `connector.navigate`。
+
+指南里还有两条与我们同源的设计纪律，值得写进我们的卡片规范：
+
+- 「feed card 是时间快照，不持久化状态；下一轮生成整卡替换，不做本地迁移」——对应我们「简报按旧状态读、每轮重算」。
+- 「活卡片用于用户要动手改的东西（勾选、排序、计数），纯阅读物一律 feed card」——两类产物生命周期不同，不要混。
+
+### 5.3 对照截图反推的晚间简报生成逻辑
+
+截图三张卡与上述契约一一对应，且每张卡都带**明确的口径声明**：
+
+1. 「晚间盘点」：eyebrow=日期，title 是一句话结论（"外部读到 0 条信号，连续第四天空读"），三个大数字（本轮信号 0 / 连续空读 4 天 / 记忆里等拍板 3 条）+ 逐日空读条 + 数据来源声明（"飞书、健康：可读，0 条；其余来源本轮不可读，并非断开"）+ 两个 composer.fill CTA。
+2. 「记忆快照」：显式区分**记忆基线 vs 本轮核实**（"本页所有进度数字都来自记忆而不是本轮核实"），画出 09-30 快照 → 10-04 的时间线，声明"读不到≠断开"。
+3. 「最小动作」：从所有队列里只挑 1 件事排第一（带成本标签"成本最小"），并引用行为数据（"你的消息在凌晨最集中，618 条里 03 时 54…"）来论证"21:36 之后到睡前是合适时段"。
+
+可提炼的四条生成原则（可直接写进我们 reflect/简报的 prompt 纪律）：
+
+- **先报口径再报数字**：每个数字必须带来源与覆盖范围；读不到就说明读不到，不许脑补成"安静"。
+- **结论式标题**：title 必须是可反驳的判断句，不是栏目名。
+- **区分事实层与记忆层**：stale 数据显式标注基线日期，不与今日实测混排。
+- **每卡只推一个最小动作**，动作文案 = 可直接发送的 prompt（composer.fill），且给"今早再说"类的退出项。
+
+### 5.4 与 dsh-muse 的映射建议
+
+- 我们的 gate/reflect 产出可落成同样的双形态：**只读快照 → feed card**（每轮整体替换），**可操作物（任务板卡片、勾选清单）→ live widget 形态**（持久 doc + 版本迁移）。
+- 简报节奏照抄三份制：晨间（今日计划）/ 晚间（盘点+最小动作）/ 周报（健康类总结），各挂各的 schedule，而不是一条 heartbeat 包打天下。
+- CTA 语义对齐 DSH：卡片按钮 → 往对应会话注入一条现成 prompt（等价 composer.fill），保持"提议不执行"。
