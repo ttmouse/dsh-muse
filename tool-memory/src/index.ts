@@ -53,7 +53,7 @@ function requireAgent(exec: ToolRunContext): NonNullable<ToolRunContext['agent']
   return agent
 }
 
-const KINDS = ['preference', 'fact', 'lesson'] as const
+const KINDS = ['preference', 'fact', 'lesson', 'persona'] as const
 export type MemoryKind = (typeof KINDS)[number]
 
 const SAVE_DESCRIPTION =

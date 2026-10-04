@@ -57,6 +57,8 @@ describe('tool-memory', () => {
     await tool().execute({ content: 'multi\nline\nfact', kind: 'fact' } as never, exec)
     expect(readFileSync(memoryFilePath(), 'utf8')).not.toMatch(/multi\nline/)
     await expect(tool().execute({ content: 'x', kind: 'secret' } as never, exec)).rejects.toThrow('kind must be one of')
+    await tool().execute({ content: '回复保持简洁直接，不寒暄', kind: 'persona' } as never, exec)
+    expect(readFileSync(memoryFilePath(), 'utf8')).toContain('(persona)')
   })
 
   it('rejects calls without a running agent', async () => {
