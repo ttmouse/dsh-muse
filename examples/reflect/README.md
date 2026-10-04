@@ -17,6 +17,6 @@ node reflect.mjs --session <sessionId> [--url http://127.0.0.1:3080] [--dry-run]
 
 ## 已验证
 
-- 真实运行：history 缺失/为空时优雅降级；LLM 保守判定（无新记忆、无想法时不注入）
+- 当前行为：无法取得可靠 history 时延期，不调用模型生成事实或提议；输入指纹不变时不调用模型
 - scope 分流：mock 双类记忆实测分别落入全局/项目文件
-- 想法注入复用 gate 的 session/prompt 链路（已实测）
+- 想法通过持久 mailbox，以 `source.kind=muse` 投递；不使用伪装人类的 session/prompt。idea-only turn 禁止工具执行。当前合同和验证见 [timer-first](../../docs/timer-first.md)

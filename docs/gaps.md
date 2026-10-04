@@ -1,5 +1,7 @@
 # 缺口清单与实现边界
 
+后续迭代入口：[持续演进框架](evolution/README.md)；当前候选、证据与下一步统一维护在 [state.json](evolution/state.json)。本文保留机制边界分析，不另维护一份优先级。
+
 ## 当前范围与剩余重点（2026-10-05）
 
 同一会话、定时驱动是当前交付范围。原生 routine 已补上持久任务索引、到期冷恢复、运行预算、等待退避和完成停止；授权 sidecar 绑定直接人类消息，gate/reflect 使用非人类 mailbox。真实 AgentLoop + JSONL 重启、CLI 静默与敏感分支已验证，见 [定时闭环](timer-first.md)。

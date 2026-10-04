@@ -6,7 +6,7 @@
 
 ## 这是什么
 
-两个 DSH 插件 + 一组体验配方，复刻 [Meta Muse](https://hub-assets-cache.baai.ac.cn/view/58273) 的产品内核：**一个常驻长对话，agent 替你盯事、持续推进、值得说时才开口**。
+三个 DSH 插件 + 一组体验配方，复刻 [Meta Muse](https://introducing.muse.ai/) 的产品内核：**一个常驻长对话，agent 替你盯事、持续推进、值得说时才开口**。
 
 | 组成 | 职责 |
 |---|---|
@@ -36,11 +36,12 @@ dsh plugin --profile web add <已发布的包名或 git 地址>   # 两个包都
 
 ## 文档
 
+- [持续演进框架](docs/evolution/README.md) — 长期方向、每轮合同、一手资料、场景验收和证据账本。先运行 `pnpm evolution:status` 找下一步，`pnpm evolution:check` 检查闭环。
 - [docs/goals.md](docs/goals.md) — Muse ↔ DSH 机制对照（含证据）
 - [docs/experience-guide.md](docs/experience-guide.md) — 三种体感的体验指南
 - [docs/proactivity-design.md](docs/proactivity-design.md) — 主动触发设计（事件驱动 + 唤醒/打扰分离）
 - [docs/FAQ.md](docs/FAQ.md) — 常见报错与修复
-- [docs/capability-checklist.md](docs/capability-checklist.md) — 27 项 Muse 能力对标清单（实时状态）
+- [docs/capability-checklist.md](docs/capability-checklist.md) — 历史能力盘点；当前优先级和证据以演进账本为准
 - [examples/habits/](examples/habits/) — 跨项目习惯挖掘器（主动想法的输入）
 - [docs/gaps.md](docs/gaps.md) — 已实现 vs Muse 尚缺（事件 ingress、记忆 seam、外部通知）
 

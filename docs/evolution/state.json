@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "updated": "2026-10-05",
+  "stage": "S0",
+  "runtime_note": "本轮未在 DSH 创建演进 routine；该账本不是授权或调度。每天 1 轮、先运行 7 轮仅为建议，须由 DSH 直接人类 turn 绑定授权。",
+  "next": "B01",
+  "candidates": [
+    {
+      "id": "B00",
+      "title": "建立可恢复的演进合同与工程基线",
+      "status": "accepted",
+      "problem": "旧路线图与当前 timer-first 范围冲突，完成勾选混同测试和实际体验。",
+      "hypothesis": "统一入口、状态账本、场景合同和证据检查可让下一轮从明确下一步继续。",
+      "scenario": "E5",
+      "next_action": "沿 B01 建立真实体验基线；本项只验收演进基础设施。",
+      "evidence": [
+        "R00"
+      ]
+    },
+    {
+      "id": "B01",
+      "title": "建立真实任务的持续推进基线",
+      "status": "active",
+      "problem": "包测试已覆盖冷恢复，但当前没有本轮核验的 24 小时真实体验样本。",
+      "hypothesis": "有限 routine 在完成、等待、静默和恢复场景中能产出成果，且不重复执行或通知。",
+      "scenario": "E1,E2,E3,E5",
+      "next_action": "按 evaluation.md 准备合成任务与脱敏计数表；核查 DSH 的现有目标和直接授权，授权成立后开始有限试运行；未成立则 waiting，继续离线可做项。",
+      "evidence": []
+    },
+    {
+      "id": "B02",
+      "title": "通知分寸的成对评估",
+      "status": "ready",
+      "problem": "安静不代表有效：漏报、重复阻塞通知还没有可比较的体验基线。",
+      "hypothesis": "用包含重要变化和重复噪声的标注样本回放，可以同时测误报与漏报，再决定是否修改判断门。",
+      "scenario": "E3",
+      "next_action": "建立合成通知回放样本及预期标签，先测当前策略；真实价值判断保留人类评价栏。",
+      "evidence": []
+    },
+    {
+      "id": "B03",
+      "title": "记忆纠正后减少重复解释",
+      "status": "ready",
+      "problem": "记忆存储通过测试，尚不能证明跨轮纠正和项目隔离的真实体感。",
+      "hypothesis": "同一组事实纠正与项目切换场景可定位错误召回，并检验用户重复解释是否减少。",
+      "scenario": "E4",
+      "next_action": "准备两个合成项目的冲突事实，复用现有 memory 测试，再在 scratch profile 验证召回。",
+      "evidence": []
+    },
+    {
+      "id": "B04",
+      "title": "让当前工作、等待和预算一眼可见",
+      "status": "ready",
+      "problem": "日志和活动卡不一定能回答当前在做什么、为何等待、何时停止。",
+      "hypothesis": "从现有 routine list 和 goal 状态生成单一视图，可减少状态追问，不需要新调度器。",
+      "scenario": "E5,E6",
+      "next_action": "先观察用户读现有状态的困难，再决定是否扩展原状态入口；演进看板不充当 runtime 状态。",
+      "evidence": []
+    },
+    {
+      "id": "B05",
+      "title": "外部事件、跨会话与高价值账号连接",
+      "status": "deferred",
+      "problem": "当前范围已暂缓，缺少比 timer-first 更紧迫的实际使用证据。",
+      "hypothesis": "只有当前范围无法满足真实需求时，扩展连接才有净收益。",
+      "scenario": "E1,E5",
+      "next_action": "等待真实需求和相应人类授权后重新评估；不因 Muse 有该功能自动接入。",
+      "evidence": []
+    }
+  ],
+  "rounds": [
+    {
+      "id": "R00",
+      "candidate": "B00",
+      "decision": "accepted",
+      "level": "engineering",
+      "evidence": [
+        "docs/evolution/rounds/2026-10-05-bootstrap.md"
+      ],
+      "summary": "方向、执行合同、来源索引、场景验收、状态校验与快照入口建立；真实长期体验仍未验证。"
+    }
+  ]
+}

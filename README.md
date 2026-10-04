@@ -6,7 +6,7 @@
 
 ## What is this
 
-Two DSH plugins + a set of experience recipes that replicate the core feel of [Meta Muse](https://hub-assets-cache.baai.ac.cn/view/58273): **one long-lived conversation where the agent watches, keeps going, and only speaks when it matters**.
+Three DSH plugins + a set of experience recipes that replicate the core feel of [Meta Muse](https://introducing.muse.ai/): **one long-lived conversation where the agent watches, keeps going, and only speaks when it matters**.
 
 | Piece | What it does |
 |---|---|
@@ -47,13 +47,14 @@ A ready-made composition example lives at [`muse.cordis.yml`-style bundles](docs
 
 ## Docs
 
+- [Continuous evolution](docs/evolution/README.md) — direction, bounded iteration contract, primary sources, scenario evaluation and evidence ledger. Start with `pnpm evolution:status`; validate with `pnpm evolution:check`.
 - [docs/goals.md](docs/goals.md) — Muse ↔ DSH mechanism mapping, with evidence
 - [docs/experience-guide.md](docs/experience-guide.md) — how to feel each capability
 - [docs/proactivity-design.md](docs/proactivity-design.md) — proactive trigger design (event-driven, wake ≠ interrupt)
 - [docs/gaps.md](docs/gaps.md) — what's implemented vs. what Muse has that we don't (event ingress, memory seam, external notify)
 - [docs/install-notes.md](docs/install-notes.md) — cross-version install gotchas (metadata, exemptions, hot-mount)
 - [docs/FAQ.md](docs/FAQ.md) — common errors and fixes
-- [docs/capability-checklist.md](docs/capability-checklist.md) — 27-item Muse parity checklist (live status)
+- [docs/capability-checklist.md](docs/capability-checklist.md) — historical Muse capability inventory; current priorities and evidence live in the evolution ledger
 - [docs/today-app-notes.md](docs/today-app-notes.md) — teardown notes of Today.app (another Muse-like) with adoptable patterns
 - [examples/habits/](examples/habits/) — cross-project habit miner (feeds proactive ideas)
 - [examples/gate/](examples/gate/) — out-of-conversation proactive gate: zero-trace checks, inject only when it matters
