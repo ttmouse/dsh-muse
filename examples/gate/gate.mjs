@@ -43,7 +43,9 @@ const { values: args } = parseArgs({
 if (!args['session']) { console.error('gate: --session <sessionId> is required'); process.exit(2) }
 
 // ---- rules ----
-const projectDir = process.env.MUSE_PROJECT_DIR ?? process.cwd()
+// launchd runs with cwd=/ — derive the project root from this script's location instead
+const scriptRoot = new URL('../../', import.meta.url).pathname  // examples/gate → repo root
+const projectDir = process.env.MUSE_PROJECT_DIR ?? scriptRoot
 const rules = args['rules'] ? JSON.parse(readFileSync(resolve(args['rules']), 'utf8')) : []
 const signalPath = join(projectDir, 'MUSE-SIGNAL.md')
 

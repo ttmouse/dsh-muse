@@ -20,6 +20,7 @@ cat > "$PLIST" <<XML
     <string>--judge</string>
   </array>
   <key>StartInterval</key><integer>$SECS</integer>
+  <key>WorkingDirectory</key><string>/Users/douba/Projects/dsh-muse</string>
   <key>RunAtLoad</key><true/>
   <key>StandardOutPath</key><string>/tmp/dsh-muse-gate.log</string>
   <key>StandardErrorPath</key><string>/tmp/dsh-muse-gate.log</string>
