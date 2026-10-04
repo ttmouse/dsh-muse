@@ -1,0 +1,3 @@
+- insert:
+    - id: muse
+      name: '@deepseek-ai/dsh-muse'
