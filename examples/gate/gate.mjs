@@ -26,6 +26,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { homedir } from 'node:os'
 import { parseArgs } from 'node:util'
 import { callRpc, llmJson, logDecision as sharedLog } from '../lib/dsh-client.mjs'
+import { checkOutbound } from '../lib/outbound-policy.mjs'
 import { pollImap } from './sources/imap.mjs'
 import { pollJxaCalendar } from './sources/jxa-calendar.mjs'
 
@@ -168,6 +169,23 @@ if (hits.length === 0) process.exit(0) // ← the whole point: silence, zero tra
 
 // ---- judge gate (P3): a cheap LLM decides whether this is worth interrupting ----
 const message = hits.map(h => h.message).join('\n')
+
+// ---- F3.1 pre-LLM credential gate (unconditional, before judge and before any log) ----
+const exfil = checkOutbound({ channel: 'session-inject', payload: message })
+if (exfil.decision === 'deny') {
+  logDecision(`F3.1 blocked: credential material in outbound candidate — content withheld, never sent to LLM or logs`)
+  for (const h of hits) { try { unlinkSync(h.consume) } catch {} }
+  console.log('gate: blocked by outbound policy F3.1 (credential material)')
+  process.exit(0)
+}
+
+// ---- F3 pre-LLM filter: sensitive content never enters the judge LLM call ----
+if (isSensitive(message)) {
+  logDecision('skip: sensitive content (OTP/reset) filtered before judge — never sent to LLM')
+  for (const h of hits) { try { unlinkSync(h.consume) } catch {} }
+  process.exit(0)
+}
+
 if (args.judge) {
   if (!message.trim()) { logDecision('skip: empty candidate message'); process.exit(0) }
   const verdict = await judgeWorthy(message)
@@ -190,6 +208,15 @@ async function judgeWorthy(message) {
 }
 
 function logDecision(line) { sharedLog(projectDir, 'gate-decisions.log', line) }
+
+// ---- F3 outbound check: credential material must never enter session context ----
+const outbound = checkOutbound({ channel: 'session-inject', payload: message })
+if (outbound.decision === 'deny') {
+  logDecision(`F3 blocked: ${outbound.rule}`)
+  for (const h of hits) { try { unlinkSync(h.consume) } catch {} }
+  console.log('gate: blocked by outbound policy (credential material never enters context)')
+  process.exit(0)
+}
 
 // ---- inject via session.prompt RPC ----
 try {
