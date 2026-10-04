@@ -75,6 +75,33 @@ importers:
         specifier: ^3
         version: 3.2.7(@types/node@24.19.1)(jiti@2.7.0)
 
+  tool-memory:
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.4
+        version: 4.0.4(@deepseek-ai/cordis-plugin-loader@1.0.5)
+      '@deepseek-ai/dsh-agent':
+        specifier: ^0.2.0-rc.2
+        version: 0.2.0-rc.2(b872d4d836bb263e5b3a50782f98c977)
+      '@deepseek-ai/dsh-invariants':
+        specifier: ^0.2.0-rc.2
+        version: 0.2.0-rc.2(@deepseek-ai/cordis@4.0.4)
+      '@deepseek-ai/dsh-llm':
+        specifier: ^0.2.0-rc.2
+        version: 0.2.0-rc.2(@deepseek-ai/cordis@4.0.4)
+      '@deepseek-ai/dsh-tools':
+        specifier: ^0.2.0-rc.2
+        version: 0.2.0-rc.2(c6e351a6a6cfd1c2a664558bffcd410d)
+      tsdown:
+        specifier: ^0.14
+        version: 0.14.2(typescript@5.9.3)
+      typescript:
+        specifier: ^5.9
+        version: 5.9.3
+      vitest:
+        specifier: ^3
+        version: 3.2.7(@types/node@24.19.1)(jiti@2.7.0)
+
   tool-muse:
     devDependencies:
       '@deepseek-ai/cordis':

@@ -1,0 +1,3 @@
+- insert:
+    - id: tool-memory
+      name: '@deepseek-ai/dsh-tool-memory'

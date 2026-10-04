@@ -1,3 +1,4 @@
 packages:
   - muse
   - tool-muse
+  - tool-memory
