@@ -84,7 +84,13 @@ const verdict = await llmJson(
 logDecision(projectDir, 'reflect-decisions.log', `reflect: memory=${verdict.memory_additions?.length ?? 0} additions; idea=${verdict.idea?.worth_saying ? verdict.idea.text.slice(0, 80) : 'none'}; plan=${verdict.plan_note?.slice(0, 80) ?? 'none'}`)
 
 // ---- ① memory additions: dedupe, append (preference → global; fact/lesson → project file) ----
-const slug = (process.env.MUSE_PROJECT_DIR ?? process.cwd()).replaceAll('/', '-').replace(/^-/, '') || 'root'
+// project root = git toplevel (fallback: cwd), so lessons land in the repo's file regardless of subdir
+let projectRoot = process.env.MUSE_PROJECT_DIR ?? process.cwd()
+try {
+  const { execSync } = await import('node:child_process')
+  projectRoot = execSync('git rev-parse --show-toplevel', { cwd: projectRoot }).toString().trim()
+} catch {}
+const slug = projectRoot.replaceAll('/', '-').replace(/^-/, '') || 'root'
 const projectPath = join(process.env.DSH_HOME ?? join(homedir(), '.dsh'), 'memories', 'projects', `${slug}.md`)
 const existingGlobal = existsSync(memoryPath) ? readFileSync(memoryPath, 'utf8') : ''
 const existingProject = existsSync(projectPath) ? readFileSync(projectPath, 'utf8') : ''
