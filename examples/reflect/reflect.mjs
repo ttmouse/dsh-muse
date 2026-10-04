@@ -83,14 +83,25 @@ const verdict = await llmJson(
 )
 logDecision(projectDir, 'reflect-decisions.log', `reflect: memory=${verdict.memory_additions?.length ?? 0} additions; idea=${verdict.idea?.worth_saying ? verdict.idea.text.slice(0, 80) : 'none'}; plan=${verdict.plan_note?.slice(0, 80) ?? 'none'}`)
 
-// ---- ① memory additions: dedupe, append ----
-const existing = existsSync(memoryPath) ? readFileSync(memoryPath, 'utf8') : ''
-const additions = (verdict.memory_additions ?? []).filter(a => a?.content && !existing.includes(a.content))
+// ---- ① memory additions: dedupe, append (preference → global; fact/lesson → project file) ----
+const slug = (process.env.MUSE_PROJECT_DIR ?? process.cwd()).replaceAll('/', '-').replace(/^-/, '') || 'root'
+const projectPath = join(process.env.DSH_HOME ?? join(homedir(), '.dsh'), 'memories', 'projects', `${slug}.md`)
+const existingGlobal = existsSync(memoryPath) ? readFileSync(memoryPath, 'utf8') : ''
+const existingProject = existsSync(projectPath) ? readFileSync(projectPath, 'utf8') : ''
+const additions = (verdict.memory_additions ?? []).filter(a => a?.content
+  && !(a.kind === 'preference' ? existingGlobal : existingProject + existingGlobal).includes(a.content))
 if (additions.length > 0 && !args['dry-run']) {
-  mkdirSync(join(memoryPath, '..'), { recursive: true })
-  if (!existsSync(memoryPath)) writeFileSync(memoryPath, '# Muse memory\n\n', { mode: 0o600 })
   const stamp = new Date().toISOString()
-  writeFileSync(memoryPath, existing + additions.map(a => `- [${stamp}] (${a.kind ?? 'fact'}) ${String(a.content).replaceAll('\n', ' ')}\n`).join(''), { flag: 'a' })
+  for (const [path, header] of [[memoryPath, '# Muse memory\n\n'], [projectPath, '']]) {
+    if (!existsSync(path)) { mkdirSync(join(path, '..'), { recursive: true }); writeFileSync(path, header, { mode: 0o600 }) }
+  }
+  for (const a of additions) {
+    const kind = a.kind ?? 'fact'
+    const line = `- [${stamp}] (${kind}) ${String(a.content).replaceAll('\n', ' ')}\n`
+    const isGlobal = kind === 'preference'
+    const target = isGlobal ? memoryPath : projectPath
+    writeFileSync(target, readFileSync(target, 'utf8') + line, { flag: 'a' })
+  }
 }
 
 // ---- ② idea: only as a proposal, only if worth saying ----
