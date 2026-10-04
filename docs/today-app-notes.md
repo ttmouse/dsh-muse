@@ -1,7 +1,14 @@
-# Today.app 拆解笔记（2026-10-05）
+# Today.app 拆解笔记（2026-10-05，v1.20.7 初拆 + v1.21.3 深拆汇总）
 
-对标对象：`/Applications/Today.app`（ai.today.macos，v1.20.7，Electron，421M）。
-方法：asar 解包 + 静态分析（shell 层 + web-runtimes 层）。云端逻辑不可见，以下全部为客户端可证事实。
+对标对象：`/Applications/Today.app`（ai.today.macos，Electron；初拆 v1.20.7 / 421M，深拆 v1.21.3 / build 2000115，CN 区）。
+方法：asar 解包 + 静态分析（shell 层 + web-runtimes 层 + today-demo 演示包）。云端生成逻辑不可见，以下全部为客户端可证事实。
+
+## 0. 本次新增证据源（v1.21.3）
+
+- 壳层 `app.asar`：`today-desktop-cn`，依赖极少（undici/zod/set-cookie-parser + `@todayai-labs/demo-mode`），确认「薄壳」判断。
+- `web-runtimes/prod.asar`：完整 Next.js 服务端应用，路由树可见：`/today`（v1/v3）、`/diaries`、`/memories`、`/health/{signals,notes,reports}`、`/tasks/routines`、`/routines`、`/chat`、`/connectors`、`/skills`、`/rapport`、`/channels`、`/calendar`，API 有 `today-pages`、`live-widgets`、`widgets`、`ws`、`recordings`。
+- 简报枚举（API 层 zod 契约）：`briefId ∈ {morning, evening, health}`，brief kind ∈ `{morning_brief, morning_brief_v3, evening_brief, weekly_health_report}`，启用/排程走 `PUT /v2/today-pages/briefs/{id}/enabled`（云端转发）。
+- `Resources/today-demo/*.todaydemo`（zip 包）内含**完整的卡片作者指南**（GUIDELINES_FEED.md / GUIDELINES_LIVE_WIDGET.md）与示例 widget 源码——这是截图里「晚间简报」卡片的生成契约，见 §5。
 
 ## 架构观察
 
