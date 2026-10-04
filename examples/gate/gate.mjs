@@ -27,6 +27,7 @@ import { homedir } from 'node:os'
 import { parseArgs } from 'node:util'
 import { callRpc, llmJson, logDecision as sharedLog } from '../lib/dsh-client.mjs'
 import { pollImap } from './sources/imap.mjs'
+import { pollJxaCalendar } from './sources/jxa-calendar.mjs'
 
 const { values: args } = parseArgs({
   args: process.argv.slice(2),
@@ -97,6 +98,18 @@ async function pollHttp(rule) {
 }
 
 for (const rule of rules) {
+  if (rule.type === 'jxa-calendar') {
+    try {
+      for (const ev of pollJxaCalendar(rule)) {
+        hits.push({ message: (rule.messageTemplate ?? '日程提醒：$summary（$startLabel，日历：$calendar）')
+          .replaceAll('$summary', ev.summary).replaceAll('$startLabel', ev.startLabel).replaceAll('$calendar', ev.calendar) })
+      }
+    } catch (error) {
+      if (error.code === 'CALENDAR_PERMISSION_REQUIRED') {
+        logDecision('jxa-calendar: 需要「日历」权限——系统设置 → 隐私与安全性 → 日历，允许运行本闸门的程序访问')
+      } else console.error(`gate: jxa-calendar failed: ${String(error).slice(0, 160)}`)
+    }
+  }
   if (rule.type === 'imap') {
     try {
       const password = rule.passwordRef ? readCredRef(rule.passwordRef) : rule.password
