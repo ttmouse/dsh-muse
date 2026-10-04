@@ -1,6 +1,6 @@
-# Live-model counterpart to muse.cordis.snapshot.yml: the same goal family plus
-# Muse autonomy, driven by the real DeepSeek adapter. Requires DEEPSEEK_API_KEY
-# through the credential store.
+# Goal family + Muse autonomy bundle example: add these five entries to your
+# profile's bundle list (goal family first, muse last). Model credentials go
+# through the DSH credential store.
 - id: base
   name: '@deepseek-ai/cordis-plugin-include'
   config:
