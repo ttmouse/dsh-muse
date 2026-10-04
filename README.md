@@ -54,6 +54,7 @@ A ready-made composition example lives at [`muse.cordis.yml`-style bundles](docs
 - [docs/install-notes.md](docs/install-notes.md) — cross-version install gotchas (metadata, exemptions, hot-mount)
 - [docs/FAQ.md](docs/FAQ.md) — common errors and fixes
 - [docs/capability-checklist.md](docs/capability-checklist.md) — 27-item Muse parity checklist (live status)
+- [docs/today-app-notes.md](docs/today-app-notes.md) — teardown notes of Today.app (another Muse-like) with adoptable patterns
 - [examples/habits/](examples/habits/) — cross-project habit miner (feeds proactive ideas)
 - [examples/gate/](examples/gate/) — out-of-conversation proactive gate: zero-trace checks, inject only when it matters
 - [docs/heartbeat-recipes.md](docs/heartbeat-recipes.md) — copy-paste silent-heartbeat / proactive-report recipes
