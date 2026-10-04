@@ -13,6 +13,7 @@
   "types": "lib/types/index.d.ts",
   "exports": {
     ".": { "types": "./lib/types/index.d.ts", "default": "./lib/index.js" },
+    "./storage": { "types": "./lib/types/storage.d.ts", "default": "./lib/storage.js" },
     "./src/*": "./src/*",
     "./package.json": "./package.json"
   },

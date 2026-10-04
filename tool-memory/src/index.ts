@@ -4,13 +4,14 @@
  * prompt context. @module @deepseek-ai/dsh-tool-memory
  */
 
-import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs'
+import { readFileSync, existsSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import { HarnessError } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { GenericCallView, ToolRunContext } from '@deepseek-ai/dsh-tools'
+import { appendMemory, projectPath } from './storage.ts'
 
 export const name = 'tool-memory'
 export const inject = ['systemPrompt', 'tools']
@@ -27,11 +28,8 @@ export function memoryFilePath(): string {
 
 /** Per-project memory file (lessons/facts scoped to one working directory). */
 export function projectMemoryFilePath(cwd = process.cwd()): string {
-  const slug = cwd.replaceAll('/', '-').replace(/^-/, '') || 'root'
-  return join(dshHome(), 'memories', 'projects', `${slug}.md`)
+  return projectPath(dshHome(), cwd)
 }
-
-const HEADER = '# Muse memory\n\n> Human-editable. One `- [timestamp] (kind) content` line per memory. The agent appends via memory_save and reads this file every turn.\n'
 
 /** Collapse duplicate headers/blank runs left by concurrent writers; returns normalized text. */
 export function normalizeMemory(text: string): string {
@@ -57,17 +55,8 @@ export function readMemory(maxChars = 8000, path = memoryFilePath()): string {
   if (!existsSync(path)) return ''
   const raw = readFileSync(path, 'utf8')
   const text = normalizeMemory(raw)
-  if (text !== raw) { try { writeFileSync(path, text, { mode: 0o600 }) } catch {} }
+  // Reading a prompt must not rewrite a file another process may be appending.
   return text.length > maxChars ? `…(older memories trimmed)\n${text.slice(-maxChars)}` : text
-}
-
-function appendEntry(content: string, kind: string, path = memoryFilePath()): void {
-  if (!existsSync(path)) {
-    mkdirSync(join(path, '..'), { recursive: true })
-    writeFileSync(path, HEADER, { mode: 0o600 })
-  }
-  const line = `- [${new Date().toISOString()}] (${kind}) ${content.replaceAll('\n', ' ')}\n`
-  writeFileSync(path, readFileSync(path, 'utf8') + line, { flag: 'a' })
 }
 
 function requireAgent(exec: ToolRunContext): NonNullable<ToolRunContext['agent']> {
@@ -92,13 +81,14 @@ export function apply(ctx: Context): void {
   ctx.systemPrompt.context({
     name: 'muse:memory',
     order: 125,
-    text: () => {
+    text: (context) => {
       const globalMemory = readMemory()
-      const projectPath = projectMemoryFilePath()
+      const cwd = context.agent?.session.header.cwd ?? process.cwd()
+      const projectPath = projectMemoryFilePath(cwd)
       const projectMemory = readMemory(4000, projectPath)
       const parts: string[] = []
       if (globalMemory !== '') parts.push(globalMemory)
-      if (projectMemory !== '') parts.push(`## Project memory (${process.cwd()})\n\n${projectMemory}`)
+      if (projectMemory !== '') parts.push(`## Project memory (${cwd})\n\n${projectMemory}`)
       if (parts.length === 0) return ''
       return `## User memory (human-editable, treat as durable context)\n\n${parts.join('\n')}`
     },
@@ -135,12 +125,16 @@ export function apply(ctx: Context): void {
       }],
     },
     execute(args, exec) {
-      requireAgent(exec)
+      const agent = requireAgent(exec)
       if (!(KINDS as readonly string[]).includes(args.kind)) {
         throw new HarnessError(`kind must be one of ${KINDS.join(', ')}`, 'MEMORY_TOOL_KIND_INVALID')
       }
-      const path = args.scope === 'project' ? projectMemoryFilePath() : memoryFilePath()
-      appendEntry(args.content.trim(), args.kind, path)
+      if (args.scope !== undefined && args.scope !== 'project' && args.scope !== 'global') {
+        throw new HarnessError('scope must be global or project', 'MEMORY_TOOL_SCOPE_INVALID')
+      }
+      if (!args.content.trim()) throw new HarnessError('memory content must not be empty', 'MEMORY_TOOL_CONTENT_INVALID')
+      const path = args.scope === 'project' ? projectMemoryFilePath(agent.session?.header.cwd) : memoryFilePath()
+      appendMemory(path, args.content.trim(), args.kind)
       return Promise.resolve({ saved: true })
     },
     presentCall: (args: { content: string; kind: string }) => ({
