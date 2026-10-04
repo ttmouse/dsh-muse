@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>开支仪表盘</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: system-ui, sans-serif; margin: 0 auto; max-width: 640px; padding: 16px; }
+  h1 { font-size: 1.2rem; }
+  .total { font-size: 2rem; font-weight: 700; margin: 8px 0 16px; }
+  .bar-row { display: grid; grid-template-columns: 5em 1fr 4em; align-items: center; gap: 8px; margin: 6px 0; }
+  .bar { height: 14px; border-radius: 4px; background: #4a90d9; min-width: 2px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+  td, th { padding: 6px 8px; border-bottom: 1px solid #8884; text-align: left; }
+  td:last-child, th:last-child { text-align: right; }
+  .filter { margin: 12px 0; }
+  .filter button { margin-right: 6px; padding: 4px 12px; cursor: pointer; }
+  .filter button.on { background: #4a90d9; color: #fff; border: none; }
+</style>
+</head>
+<body>
+<h1>开支仪表盘 — <span id="month"></span></h1>
+<div class="total">¥<span id="total"></span></div>
+<div class="filter" id="filters"></div>
+<div id="bars"></div>
+<table><thead><tr><th>日期</th><th>类别</th><th>备注</th><th>金额</th></tr></thead><tbody id="rows"></tbody></table>
+<script>
+const DATA = {"month": "2026-10", "items": [{"date": "2026-10-01", "category": "餐饮", "amount": 45, "note": "午餐"}, {"date": "2026-10-02", "category": "交通", "amount": 12, "note": "地铁"}, {"date": "2026-10-03", "category": "餐饮", "amount": 68, "note": "晚餐"}, {"date": "2026-10-04", "category": "订阅", "amount": 30, "note": "云服务"}, {"date": "2026-10-05", "category": "餐饮", "amount": 22, "note": "早餐"}, {"date": "2026-10-05", "category": "交通", "amount": 8, "note": "公交"}]};
+const byCat = {};
+for (const it of DATA.items) byCat[it.category] = (byCat[it.category] ?? 0) + it.amount;
+document.getElementById('month').textContent = DATA.month;
+document.getElementById('total').textContent = DATA.items.reduce((s, i) => s + i.amount, 0);
+const max = Math.max(...Object.values(byCat));
+const bars = document.getElementById('bars');
+for (const [cat, v] of Object.entries(byCat)) {
+  bars.insertAdjacentHTML('beforeend',
+    `<div class="bar-row"><span>${cat}</span><div class="bar" style="width:${(v / max) * 100}%"></div><span>¥${v}</span></div>`);
+}
+const rows = document.getElementById('rows');
+const render = (cat) => {
+  rows.innerHTML = '';
+  for (const it of DATA.items.filter(i => cat === '全部' || i.category === cat)) {
+    rows.insertAdjacentHTML('beforeend', `<tr><td>${it.date}</td><td>${it.category}</td><td>${it.note}</td><td>¥${it.amount}</td></tr>`);
+  }
+};
+const cats = ['全部', ...Object.keys(byCat)];
+for (const c of cats) {
+  const b = document.createElement('button');
+  b.textContent = c; b.className = 'on' + ''; b.onclick = () => render(c);
+  document.getElementById('filters').appendChild(b);
+}
+render('全部');
+</script>
+</body>
+</html>
