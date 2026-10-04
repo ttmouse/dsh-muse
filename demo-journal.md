@@ -13,3 +13,4 @@
 - [2026-10-05 02:30 +08:00] P5+P1 v1 完成：http-poll 连接器 source（状态去重）+ 敏感内容确定性滤除（验证码等永不进 agent 上下文）。mock feed 实测：敏感丢弃、正常注入、二次去重静默。
 - [2026-10-05 02:45 +08:00] 守护化+节奏落地：gate+reflect 已挂 launchd（当前 10 分钟高频测试档，用户睡前可一条命令调慢）；IMAP source 完成（密码走本地凭证引用）。
 - [2026-10-05 02:55 +08:00] 心跳：检查项目目录与 journal，无异常、无新增信号；本轮开发成果已在会话内实时汇报，结论：不说
+- [2026-10-05 02:50 +08:00] tool-memory 已装入网页端 profile（dsh plugin add + allow-version 豁免，dump-config 组合树含 tool-memory）；web 重启后 memory_save 与每 turn 记忆注入即对用户会话生效。另：新增 muse-status.sh 状态脚本与空候选守卫修复。
