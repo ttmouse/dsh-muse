@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, existsSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import type { Context } from '@deepseek-ai/cordis'
-import { apply, memoryFilePath, normalizeMemory, projectMemoryFilePath, readMemory } from '../src/index.js'
+import { apply, appendEntry, memoryFilePath, normalizeMemory, projectMemoryFilePath, readMemory, supersedeEntries } from '../src/index.js'
 
 type Tool = { name: string; execute: (args: never, exec: unknown) => Promise<unknown>; description: string }
 type PromptContext = { name: string; order: number; text: (ctx: { agent?: unknown }) => string }
@@ -101,6 +101,16 @@ describe('tool-memory', () => {
     expect(rendered).toContain('全局偏好')
     expect(rendered).toContain('Project memory')
     expect(rendered).toContain('项目内事实')
+  })
+
+  it('supersedeEntries moves matching old entries to archive and keeps the correction', () => {
+    appendEntry('用户的项目部署在 AWS', 'fact', memoryFilePath())
+    appendEntry('用户的项目已迁移到自托管服务器', 'fact', memoryFilePath())
+    const moved = supersedeEntries('AWS', memoryFilePath())
+    expect(moved).toBe(1)
+    const text = readFileSync(memoryFilePath(), 'utf8')
+    expect(text).toContain('自托管服务器')
+    expect(text).not.toContain('部署在 AWS')
   })
 
   it('normalizeMemory collapses duplicate headers and repeated entries (self-heal)', () => {

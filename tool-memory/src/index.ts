@@ -4,9 +4,9 @@
  * prompt context. @module @deepseek-ai/dsh-tool-memory
  */
 
-import { readFileSync, existsSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { join, dirname } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import { HarnessError } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
@@ -59,6 +59,24 @@ export function readMemory(maxChars = 8000, path = memoryFilePath()): string {
   return text.length > maxChars ? `…(older memories trimmed)\n${text.slice(-maxChars)}` : text
 }
 
+/** Move memory lines containing `needle` into the archive file; returns archived count. */
+export function supersedeEntries(needle: string, path = memoryFilePath()): number {
+  if (!existsSync(path)) return 0
+  const archivePath = join(dirname(path), 'archive', 'superseded.md')
+  const lines = readFileSync(path, 'utf8').split('\n')
+  const kept: string[] = [], moved: string[] = []
+  for (const line of lines) {
+    if (line.includes(needle) && line.trim().startsWith('- ')) moved.push(line)
+    else kept.push(line)
+  }
+  if (moved.length === 0) return 0
+  mkdirSync(dirname(archivePath), { recursive: true })
+  const prev = existsSync(archivePath) ? readFileSync(archivePath, 'utf8') : '# Archive\n\n'
+  writeFileSync(archivePath, prev + moved.join('\n').replace(/\n?$/, '\n') + '\n', { mode: 0o600 })
+  writeFileSync(path, kept.join('\n'), { mode: 0o600 })
+  return moved.length
+}
+
 function requireAgent(exec: ToolRunContext): NonNullable<ToolRunContext['agent']> {
   const agent = exec.agent
   if (agent === undefined || agent.status !== 'running') {
@@ -108,6 +126,10 @@ export function apply(ctx: Context): void {
         required: true,
         description: `One of: ${KINDS.join(', ')}.`,
       },
+      supersedes: {
+        type: 'string',
+        description: '旧记忆的子串：本条纠正/取代该旧记忆，匹配的旧条目将移入归档（用于事实变更，如「已迁移到 X」取代「部署在 AWS」）。不确定就不要填。',
+      },
       scope: {
         type: 'string',
         description: "'global' (default) injects into every session; 'project' injects only into sessions whose cwd matches this entry's working directory. Project-scope is right for lessons/facts tied to one codebase.",
@@ -117,9 +139,9 @@ export function apply(ctx: Context): void {
       schema: {
         type: 'object',
         additionalProperties: false,
-        properties: { saved: { type: 'boolean', required: true } },
+        properties: { saved: { type: 'boolean', required: true }, superseded: { type: 'integer' } },
       },
-      render: (_args: unknown, value: { saved: boolean }) => [{
+      render: (_args: unknown, value: { saved: boolean; superseded?: number }) => [{
         type: 'text' as const,
         text: JSON.stringify(value),
       }],
