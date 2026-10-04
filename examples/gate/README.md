@@ -71,3 +71,9 @@ Cookie: dsh-auth-<b64url(sha256(authority))>=v1.<b64url(json payload)>.<b64url(h
 - 静默分支：无信号 → 零输出退出
 - 开口分支：信号文件 → `would inject`（dry-run）
 - 真实注入：信号 → `injected` → 主线会话收到 `[muse-gate]` 消息（本仓库开发过程中实测）
+
+## wire 契约补充（0.1.5-rc.2 实测）
+
+- `session/prompt` 的 args 字段名是 `request`（`session/list` 是 `_request`）——共享客户端会从网关报错里自动学习正确字段名
+- request 里需要 `requestId`（uuid）
+- 共享模块在 `examples/lib/dsh-client.mjs`：mintCookie / callRpc / injectPrompt / llmJson，reflect 脚本复用

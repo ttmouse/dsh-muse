@@ -8,3 +8,4 @@
 - [2026-10-05 00:42 +08:00] 心跳（开口分支测试）：发现该开口的信号，已汇报
 - [2026-10-05 02:05 +08:00] P3 判断门完成：gate --judge（DeepSeek），mock 双分支 + 真实 API 冒烟通过。Muse「值不值得打扰」的分寸感机制落地。
 - [2026-10-05 02:10 +08:00] P2 记忆件完成：tool-memory 包（memory_save 工具 + muse:memory 动态注入 order 125），6/6 测试通过，scratch profile 组合验证。
+- [2026-10-05 02:20 +08:00] 反思循环地基完成：lib/dsh-client.mjs 共享模块（签名 cookie / RPC 自动适配 args 字段名 / LLM 判断），gate 重构复用并修复 requestId wire 字段；真实会话注入成功（含判断门 SKIP/SAY 双分支）。发现：判断门把测试消息正确判为「测试噪声」拒绝注入——分寸感语义判断生效。
