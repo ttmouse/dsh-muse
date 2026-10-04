@@ -21,7 +21,7 @@
  * leaves the machine; requires the script to run as the same OS user.
  */
 import { createHash, createHmac, randomUUID } from 'node:crypto'
-import { readFileSync, existsSync, unlinkSync } from 'node:fs'
+import { readFileSync, existsSync, unlinkSync, appendFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { parseArgs } from 'node:util'
@@ -32,6 +32,8 @@ const { values: args } = parseArgs({
     session: { type: 'string' },
     url: { type: 'string', default: 'http://127.0.0.1:3080' },
     rules: { type: 'string' },
+    judge: { type: 'boolean' },
+    'judge-model': { type: 'string', default: 'deepseek-chat' },
     'dry-run': { type: 'boolean' },
   },
   allowPositionals: true,
@@ -55,7 +57,52 @@ if (existsSync(signalPath)) {
 }
 if (hits.length === 0) process.exit(0) // ← the whole point: silence, zero trace
 
+// ---- judge gate (P3): a cheap LLM decides whether this is worth interrupting ----
 const message = hits.map(h => h.message).join('\n')
+if (args.judge) {
+  const verdict = await judgeWorthy(message)
+  logDecision(`judge: ${verdict.worth_saying ? 'SAY' : 'SKIP'} — ${verdict.reason}`)
+  if (!verdict.worth_saying) {
+    logDecision(`candidates: ${message.replaceAll('\n', ' | ')}`)
+    process.exit(0) // judged not worth it → silence, zero trace
+  }
+}
+
+async function judgeWorthy(message) {
+  const key = process.env.DEEPSEEK_API_KEY ?? readKeyFromCredentials()
+  if (!key) { console.error('gate: --judge needs DEEPSEEK_API_KEY (env or ~/.dsh/.credentials.yaml)'); process.exit(2) }
+  const base = process.env.MUSE_JUDGE_URL ?? 'https://api.deepseek.com'
+  const res = await fetch(new URL('/chat/completions', base), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
+    body: JSON.stringify({
+      model: args['judge-model'],
+      messages: [
+        { role: 'system', content: 'You are the notification gate of a personal agent. Decide if this message is worth INTERRUPTING the user in their main conversation. Say yes only for: meaningful new progress on their goals, something needing their decision/action, or time-sensitive items. Reject: routine checks, test noise, anything they did not ask to be notified about. Reply ONLY strict JSON: {"worth_saying": boolean, "reason": "<=20 words"}' },
+        { role: 'user', content: message },
+      ],
+      max_tokens: 100,
+      temperature: 0,
+    }),
+  })
+  if (!res.ok) { console.error(`gate: judge call failed ${res.status}: ${(await res.text()).slice(0, 200)}`); process.exit(1) }
+  const data = await res.json()
+  const content = data.choices?.[0]?.message?.content ?? ''
+  const match = content.match(/\{[^}]*\}/s)
+  try { return JSON.parse(match[0]) } catch { console.error(`gate: judge returned unparsable: ${content.slice(0, 100)}`); process.exit(1) }
+}
+
+function readKeyFromCredentials() {
+  try {
+    const text = readFileSync(join(homedir(), '.dsh', '.credentials.yaml'), 'utf8')
+    const line = text.split('\n').find(l => l.trim().startsWith('DEEPSEEK_API_KEY:'))
+    return line?.split('DEEPSEEK_API_KEY:')[1]?.trim().replaceAll("'", '') ?? undefined
+  } catch { return undefined }
+}
+
+function logDecision(line) {
+  try { appendFileSync(join(projectDir, 'gate-decisions.log'), `- [${new Date().toISOString()}] ${line}\n`) } catch {}
+}
 if (args['dry-run']) { console.log(`gate: would inject: ${message}`); process.exit(0) }
 
 // ---- mint the signed browser-session cookie (same scheme as dsh-client-connection) ----
