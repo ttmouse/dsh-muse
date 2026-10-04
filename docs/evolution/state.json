@@ -35,7 +35,9 @@
       "hypothesis": "用包含重要变化和重复噪声的标注样本回放，可以同时测误报与漏报，再决定是否修改判断门。",
       "scenario": "E3",
       "next_action": "建立合成通知回放样本及预期标签，先测当前策略；真实价值判断保留人类评价栏。",
-      "evidence": []
+      "evidence": [
+        "R-B02: 合成样本 10 条（A6/B1/C3），judge 基线 precision 100% recall 100%（provisional，待真实消息人工标注复核）；评估器 examples/gate/notify-eval.mjs"
+      ]
     },
     {
       "id": "B03",
@@ -78,6 +80,7 @@
         "docs/evolution/rounds/2026-10-05-bootstrap.md"
       ],
       "summary": "方向、执行合同、来源索引、场景验收、状态校验与快照入口建立；真实长期体验仍未验证。"
-    }
+    },
+    "R-B02-baseline: 2026-10-05 judge 基线 10/10（合成，provisional），评估器 notify-eval.mjs"
   ]
 }
