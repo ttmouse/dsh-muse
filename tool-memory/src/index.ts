@@ -27,11 +27,32 @@ export function memoryFilePath(): string {
 
 const HEADER = '# Muse memory\n\n> Human-editable. One `- [timestamp] (kind) content` line per memory. The agent appends via memory_save and reads this file every turn.\n'
 
-/** Read the current memory text (capped for prompt injection); '' when absent. */
+/** Collapse duplicate headers/blank runs left by concurrent writers; returns normalized text. */
+export function normalizeMemory(text: string): string {
+  const header = ['# Muse memory', '', '> Human-editable. One `- [timestamp] (kind) content` line per memory. The agent appends via memory_save and reads this file every turn.', '']
+  const seen = new Set<string>()
+  const body: string[] = []
+  for (const raw of text.split('\n')) {
+    const line = raw.replace(/\s+$/, '')
+    if (line.startsWith('# Muse memory') || (line.startsWith('>') && line.includes('Human-editable'))) continue
+    if (line === '' && (body.at(-1) === '' || body.length === 0)) continue
+    if (line !== '' && line !== '…(older memories trimmed)') {
+      if (seen.has(line)) continue
+      seen.add(line)
+    }
+    body.push(line)
+  }
+  while (body.at(-1) === '') body.pop()
+  return [...header, ...body, ''].join('\n')
+}
+
+/** Read the current memory text (capped for prompt injection); '' when absent. Self-heals duplicated headers. */
 export function readMemory(maxChars = 8000): string {
   const path = memoryFilePath()
   if (!existsSync(path)) return ''
-  const text = readFileSync(path, 'utf8')
+  const raw = readFileSync(path, 'utf8')
+  const text = normalizeMemory(raw)
+  if (text !== raw) { try { writeFileSync(path, text, { mode: 0o600 }) } catch {} }
   return text.length > maxChars ? `…(older memories trimmed)\n${text.slice(-maxChars)}` : text
 }
 

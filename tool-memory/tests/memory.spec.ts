@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, existsSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import type { Context } from '@deepseek-ai/cordis'
-import { apply, memoryFilePath, readMemory } from '../src/index.js'
+import { apply, memoryFilePath, normalizeMemory, readMemory } from '../src/index.js'
 
 type Tool = { name: string; execute: (args: never, exec: unknown) => Promise<unknown>; description: string }
 type PromptContext = { name: string; order: number; text: (ctx: { agent?: unknown }) => string }
@@ -75,5 +75,18 @@ describe('tool-memory', () => {
 
   it('empty memory renders as empty string', () => {
     expect(registered.contexts[0]!.text({})).toBe('')
+  })
+
+  it('normalizeMemory collapses duplicate headers and repeated entries (self-heal)', () => {
+    const messy = [
+      '# Muse memory', '', '> Human-editable. One `- [timestamp] (kind) content` line per memory. The agent appends via memory_save and reads this file every turn.', '',
+      '- [t1] (fact) alpha', '',
+      '# Muse memory', '', '> Human-editable. One `- [timestamp] (kind) content` line per memory. The agent appends via memory_save and reads this file every turn.', '',
+      '- [t1] (fact) alpha', '- [t2] (lesson) beta', '', '',
+    ].join('\n')
+    const out = normalizeMemory(messy)
+    expect(out.match(/# Muse memory/g)?.length).toBe(1)
+    expect(out.match(/alpha/g)?.length).toBe(1)
+    expect(out).toContain('beta')
   })
 })
