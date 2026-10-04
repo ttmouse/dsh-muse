@@ -191,7 +191,7 @@ if (args.judge) {
   const verdict = await judgeWorthy(message)
   logDecision(`judge: ${verdict.worth_saying ? 'SAY' : 'SKIP'} — ${verdict.reason}`)
   if (!verdict.worth_saying) {
-    logDecision(`candidates: ${message.replaceAll('\n', ' | ')}`)
+    logDecision(`candidates: ${message.replaceAll('\n', ' | ').replaceAll(/\b[A-Za-z0-9_-]{16,}\b/g, '<redacted>')}`)
     process.exit(0) // judged not worth it → silence, zero trace
   }
 }
