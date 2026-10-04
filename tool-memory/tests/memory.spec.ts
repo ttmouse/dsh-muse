@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, existsSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import type { Context } from '@deepseek-ai/cordis'
-import { apply, memoryFilePath, normalizeMemory, readMemory } from '../src/index.js'
+import { apply, memoryFilePath, normalizeMemory, projectMemoryFilePath, readMemory } from '../src/index.js'
 
 type Tool = { name: string; execute: (args: never, exec: unknown) => Promise<unknown>; description: string }
 type PromptContext = { name: string; order: number; text: (ctx: { agent?: unknown }) => string }
@@ -75,6 +75,23 @@ describe('tool-memory', () => {
 
   it('empty memory renders as empty string', () => {
     expect(registered.contexts[0]!.text({})).toBe('')
+  })
+
+  it('scope=project writes to the per-project file, not global', async () => {
+    await tool().execute({ content: '本项目专属教训', kind: 'lesson', scope: 'project' } as never, exec)
+    const p = projectMemoryFilePath()
+    expect(existsSync(p)).toBe(true)
+    expect(readFileSync(p, 'utf8')).toContain('本项目专属教训')
+    if (existsSync(memoryFilePath())) expect(readFileSync(memoryFilePath(), 'utf8')).not.toContain('本项目专属教训')
+  })
+
+  it('prompt context includes global and current project sections', async () => {
+    await tool().execute({ content: '全局偏好', kind: 'preference' } as never, exec)
+    await tool().execute({ content: '项目内事实', kind: 'fact', scope: 'project' } as never, exec)
+    const rendered = registered.contexts[0]!.text({})
+    expect(rendered).toContain('全局偏好')
+    expect(rendered).toContain('Project memory')
+    expect(rendered).toContain('项目内事实')
   })
 
   it('normalizeMemory collapses duplicate headers and repeated entries (self-heal)', () => {

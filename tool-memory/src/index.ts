@@ -20,9 +20,15 @@ export function dshHome(): string {
   return process.env.DSH_HOME ?? join(homedir(), '.dsh')
 }
 
-/** Canonical memory file path (human-editable plain text). */
+/** Canonical global memory file path (human-editable plain text). */
 export function memoryFilePath(): string {
   return join(dshHome(), 'memories', 'main.md')
+}
+
+/** Per-project memory file (lessons/facts scoped to one working directory). */
+export function projectMemoryFilePath(cwd = process.cwd()): string {
+  const slug = cwd.replaceAll('/', '-').replace(/^-/, '') || 'root'
+  return join(dshHome(), 'memories', 'projects', `${slug}.md`)
 }
 
 const HEADER = '# Muse memory\n\n> Human-editable. One `- [timestamp] (kind) content` line per memory. The agent appends via memory_save and reads this file every turn.\n'
@@ -47,8 +53,7 @@ export function normalizeMemory(text: string): string {
 }
 
 /** Read the current memory text (capped for prompt injection); '' when absent. Self-heals duplicated headers. */
-export function readMemory(maxChars = 8000): string {
-  const path = memoryFilePath()
+export function readMemory(maxChars = 8000, path = memoryFilePath()): string {
   if (!existsSync(path)) return ''
   const raw = readFileSync(path, 'utf8')
   const text = normalizeMemory(raw)
@@ -56,8 +61,7 @@ export function readMemory(maxChars = 8000): string {
   return text.length > maxChars ? `…(older memories trimmed)\n${text.slice(-maxChars)}` : text
 }
 
-function appendEntry(content: string, kind: string): void {
-  const path = memoryFilePath()
+function appendEntry(content: string, kind: string, path = memoryFilePath()): void {
   if (!existsSync(path)) {
     mkdirSync(join(path, '..'), { recursive: true })
     writeFileSync(path, HEADER, { mode: 0o600 })
@@ -89,8 +93,14 @@ export function apply(ctx: Context): void {
     name: 'muse:memory',
     order: 125,
     text: () => {
-      const memory = readMemory()
-      return memory === '' ? '' : `## User memory (human-editable, treat as durable context)\n\n${memory}`
+      const globalMemory = readMemory()
+      const projectPath = projectMemoryFilePath()
+      const projectMemory = readMemory(4000, projectPath)
+      const parts: string[] = []
+      if (globalMemory !== '') parts.push(globalMemory)
+      if (projectMemory !== '') parts.push(`## Project memory (${process.cwd()})\n\n${projectMemory}`)
+      if (parts.length === 0) return ''
+      return `## User memory (human-editable, treat as durable context)\n\n${parts.join('\n')}`
     },
   })
 
@@ -107,6 +117,10 @@ export function apply(ctx: Context): void {
         type: 'string',
         required: true,
         description: `One of: ${KINDS.join(', ')}.`,
+      },
+      scope: {
+        type: 'string',
+        description: "'global' (default) injects into every session; 'project' injects only into sessions whose cwd matches this entry's working directory. Project-scope is right for lessons/facts tied to one codebase.",
       },
     },
     output: {
@@ -125,7 +139,8 @@ export function apply(ctx: Context): void {
       if (!(KINDS as readonly string[]).includes(args.kind)) {
         throw new HarnessError(`kind must be one of ${KINDS.join(', ')}`, 'MEMORY_TOOL_KIND_INVALID')
       }
-      appendEntry(args.content.trim(), args.kind)
+      const path = args.scope === 'project' ? projectMemoryFilePath() : memoryFilePath()
+      appendEntry(args.content.trim(), args.kind, path)
       return Promise.resolve({ saved: true })
     },
     presentCall: (args: { content: string; kind: string }) => ({
