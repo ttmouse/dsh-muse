@@ -4,9 +4,15 @@ const sensitive = /验证码|verification code|one[- ]time code|password reset|�
 
 export function reflectionText(records, limit = 24) {
   const lines = []
+  let proposalTurn = false
   for (const record of records) {
     const event = record.event ?? record
     if (!['user/message', 'assistant/message', 'agent/message'].includes(event.type)) continue
+    if (event.type === 'user/message') {
+      proposalTurn = event.data?.source?.kind === 'muse' && event.data.source.trigger === 'idea'
+    }
+    // Our own proposals and their presentation are not fresh evidence to reflect on.
+    if (proposalTurn) continue
     const text = (event.data?.content ?? []).filter(c => c.type === 'text').map(c => c.text ?? '').join(' ')
     if (!text || sensitive.test(text) || isCredentialExfiltration(text) || /^(<system-reminder>|Time sampled|\[muse-idea\])/.test(text)) continue
     const actor = event.type === 'user/message' ? (event.data.source?.kind === 'user' ? 'human' : 'automatic observation') : 'assistant'

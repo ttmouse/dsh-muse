@@ -100,6 +100,15 @@ describe('Muse timer routines', () => {
     expect(f.create).toThrow('current turn')
   })
 
+  it('cannot bypass the enabled task cap by pausing, creating, then resuming', async () => {
+    const f = await fixture()
+    const first = f.create()
+    for (let i = 0; i < 7; i++) f.create()
+    ctx.agents.withInitiator(f.agent, () => f.service.setEnabled(f.agent, first.id, false, f.human.id))
+    f.create()
+    expect(() => ctx.agents.withInitiator(f.agent, () => f.service.setEnabled(f.agent, first.id, true, f.human.id))).toThrow('eight enabled')
+  })
+
   it('goal reviews never bypass paused, blocked, disarmed or exhausted goal state', async () => {
     const f = await fixture()
     const goal = ctx.goals.create(f.agent, { objective: 'human goal' })

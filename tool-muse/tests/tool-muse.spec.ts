@@ -121,7 +121,6 @@ function openTurn(stub: StubAgent, source: MessageSource, text = 'prompt'): numb
 }
 
 async function harness() {
-  process.env.DSH_HOME = mkdtempSync(join(tmpdir(), 'muse-intent-'))
   const ctx = new Context()
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(AgentRegistry)
@@ -225,6 +224,28 @@ describe('muse_autonomy tool', () => {
     const routine = await ctx.agents.withInitiator(root.agent, () => ctx.tools.execute({ signal: testToolSignal, callId: ToolCallId('proposal-routine'), name: 'muse_routine', arguments: { operation: 'create', title: 'bad', prompt: 'bad', every_seconds: 600 }, agent: root.agent }))
     expect(routine.isError).toBe(true)
     expect(agentAutonomy(root.agent)).toBeUndefined()
+  })
+
+  it('rechecks revocation before tools in already-queued automatic work while preserving human action', async () => {
+    const { ctx, root } = await harness()
+    openTurn(root, { kind: 'user' }, 'Grant autonomous work, then stop it')
+    expect((await execute(ctx, { autonomy: true }, root.agent)).isError).toBe(false)
+    expect((await execute(ctx, { autonomy: false }, root.agent)).isError).toBe(false)
+    let ran = 0
+    ctx.tools.register({ name: 'bounded_action', description: 'test action', parameters: {}, output: {
+      schema: { type: 'object', additionalProperties: false, properties: {} }, render: () => [],
+    }, execute: async () => { ran++; return {} } } as never)
+    const action = () => ctx.agents.withInitiator(root.agent, () => ctx.tools.execute({ signal: testToolSignal, callId: ToolCallId(`action-${ran}`), name: 'bounded_action', arguments: {}, agent: root.agent }))
+    openTurn(root, { kind: 'muse', trigger: 'routine', deliveryId: 'previously-queued' })
+    expect((await action()).isError).toBe(true)
+    expect(ran).toBe(0)
+    openTurn(root, { kind: 'user' }, 'Perform this one action manually')
+    expect((await action()).isError).toBe(false)
+    expect(ran).toBe(1)
+    expect((await execute(ctx, { autonomy: true }, root.agent)).isError).toBe(false)
+    openTurn(root, { kind: 'muse', trigger: 'routine', deliveryId: 'authorized' })
+    expect((await action()).isError).toBe(false)
+    expect(ran).toBe(2)
   })
 
   it('presents the call card from the args', async () => {

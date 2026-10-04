@@ -7,7 +7,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-goal'
 import { HarnessError } from '@deepseek-ai/dsh-llm'
-import { recordAutonomy, MUSE_INTENT_VERSION, museSessionEvents } from '@deepseek-ai/dsh-muse'
+import { agentAutonomy, recordAutonomy, MUSE_INTENT_VERSION, museSessionEvents } from '@deepseek-ai/dsh-muse'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { GenericCallView, ToolRunContext } from '@deepseek-ai/dsh-tools'
@@ -189,7 +189,7 @@ export function apply(ctx: Context): void {
         }
         const routines = service.list(execution.agent).map(({ id, title, enabled, everySeconds, nextRunAt, runs, maxRuns, lastResult }) => ({
           id, title, enabled, everySeconds, nextRunAt, runs, maxRuns,
-          state: lastResult?.status === 'done' ? 'completed' : runs >= maxRuns ? 'budget-exhausted' : !enabled ? 'paused' : lastResult?.status === 'waiting' ? 'waiting' : 'scheduled',
+          state: !enabled && lastResult?.status === 'done' ? 'completed' : runs >= maxRuns ? 'budget-exhausted' : !enabled ? 'paused' : lastResult?.status === 'waiting' ? 'waiting' : 'scheduled',
           last_summary: lastResult?.summary ?? '', next_step: lastResult?.nextStep ?? '',
         }))
         return Promise.resolve({ routines })
@@ -234,6 +234,11 @@ export function apply(ctx: Context): void {
     const proposal = messages.some(e => e.type === 'user/message' && e.data.source.kind === 'muse' && e.data.source.trigger === 'idea')
     const human = messages.some(e => e.type === 'user/message' && e.data.source.kind === 'user')
     if (proposal && !human) return { kind: 'deny' as const, reason: 'Muse ideas are proposals only; a direct human request is required before taking action.' }
+    const automatic = messages.some(e => e.type === 'user/message' && e.data.source.kind === 'muse')
+    if (automatic && !human) {
+      try { if (agentAutonomy(exec.agent) === true) return next() } catch { /* Invalid proof fails closed. */ }
+      return { kind: 'deny' as const, reason: 'Muse standing autonomy is absent or revoked; queued timer work cannot execute tools.' }
+    }
     return next()
   })
 }

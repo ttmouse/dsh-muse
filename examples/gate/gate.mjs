@@ -108,14 +108,20 @@ for (const rule of rules) {
       }
     } catch (error) {
       if (error.code === 'CALENDAR_PERMISSION_REQUIRED') {
-        logDecision('jxa-calendar: 需要「日历」权限——系统设置 → 隐私与安全性 → 日历，允许运行本闸门的程序访问')
+        const guide = rule.permissionGuide ?? 'jxa-calendar: 需要「日历」权限——系统设置 → 隐私与安全性 → 日历，允许运行本闸门的程序访问'
+        logDecision(`permissionGuide: ${guide}`)
+        console.error(`gate: ${guide}`)
       } else console.error(`gate: jxa-calendar failed: ${String(error).slice(0, 160)}`)
     }
   }
   if (rule.type === 'imap') {
     try {
       const password = rule.passwordRef ? readCredRef(rule.passwordRef) : rule.password
-      if (!password) { logDecision(`imap skipped: no password for ${rule.user}`); continue }
+      if (!password) {
+        const guide = rule.permissionGuide ?? `imap: 需要授权码——${rule.user} 的应用专用密码存入凭证文件（passwordRef: ${rule.passwordRef ?? '必填'}）`
+        logDecision(`permissionGuide: ${guide}`)
+        continue
+      }
       for (const m of await pollImap({ ...rule, password })) {
         const text = `${m.subject}（来自 ${m.from}）`
         if (isSensitive(text)) { logDecision('sensitive item dropped'); continue }

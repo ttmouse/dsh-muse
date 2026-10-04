@@ -54,11 +54,14 @@ test('reflection separates human/automatic inputs and rejects string booleans an
     { event: { type: 'user/message', data: { content: [{ type: 'text', text: 'Review my project' }], source: { kind: 'user' } } } },
     { event: { type: 'user/message', data: { content: [{ type: 'text', text: 'A check completed' }], source: { kind: 'muse' } } } },
     { event: { type: 'user/message', data: { content: [{ type: 'text', text: 'verification code 123456' }], source: { kind: 'user' } } } },
+    { event: { type: 'user/message', data: { content: [{ type: 'text', text: 'This is a proposal. Our self-generated proposal.' }], source: { kind: 'muse', trigger: 'idea' } } } },
+    { event: { type: 'assistant/message', data: { content: [{ type: 'text', text: 'Presenting the same self-generated proposal' }] } } },
   ]
   const text = reflectionText(records)
   assert.match(text, /human: Review/)
   assert.match(text, /automatic observation:/)
   assert.doesNotMatch(text, /123456/)
+  assert.doesNotMatch(text, /self-generated proposal/)
   const valid = { memory_additions: [], idea: { worth_saying: false, text: '' }, plan_note: '' }
   assert.equal(validateReflection(valid), valid)
   assert.throws(() => validateReflection({ ...valid, idea: { worth_saying: 'false', text: '' } }))

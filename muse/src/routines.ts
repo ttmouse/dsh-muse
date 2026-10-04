@@ -142,6 +142,7 @@ export class MuseRoutines extends Service {
     const routine = file.routines.find(r => r.id === id)
     if (!routine) throw new Error('Routine not found in this session')
     if (enabled && routine.runs >= routine.maxRuns) throw new Error('Routine run budget exhausted; create a new human-authorized routine')
+    if (enabled && !routine.enabled && file.routines.filter(r => r.enabled).length >= 8) throw new Error('At most eight enabled routines per session')
     routine.enabled = enabled
     if (enabled) { routine.grantMessageId = grantMessageId; routine.nextRunAt = Date.now() + routine.everySeconds * 1000 }
     atomicJson(this.path(file.sessionId), file)

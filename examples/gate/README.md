@@ -62,6 +62,8 @@ node gate.mjs --session <sessionId> [--url http://127.0.0.1:3080] [--rules rules
 
 ## 连接器 source（P1）与敏感过滤（P5）
 
+**授权引导（permissionGuide）**：任何 source 规则可加 `permissionGuide` 字段——当该 source 因权限失败（EPERM、缺凭据）时，gate 会输出这段引导文案并记入日志，而不是裸报错。参考 `local-rules.example.json`。
+
 `rules.json` 支持 `http-poll`：定时拉取任意 JSON API（RSS 桥、ics 转换器、webhook 收集器），只报告**新增**条目（状态文件去重）：
 
 ```json
