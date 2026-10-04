@@ -22,7 +22,7 @@
     "node": "^22.19 || >=24"
   },
   "scripts": {
-    "build": "tsc -b tsconfig.json",
+    "build": "tsc -b tsconfig.json && pnpm --filter @deepseek-ai/dsh-muse exec tsdown && pnpm --filter @deepseek-ai/dsh-tool-muse exec tsdown",
     "test": "vitest run"
   },
   "devDependencies": {
