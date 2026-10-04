@@ -25,6 +25,12 @@ Requires a DSH runtime whose plugin tree includes the goal family (`dsh-goal`, `
 dsh plugin --profile web add <published-package-or-git-url>   # both packages
 ```
 
+Developing from a clone (verified on a fresh `git clone`):
+
+```bash
+pnpm install && pnpm build && pnpm -r test   # 24 tests
+```
+
 Then add both bundles to your profile's `dsh.profile.bundles` list, after the goal family. Packages carry their own `dsh.bundle.patch` metadata, so the plugin panel recognizes them as profile-level plugins. If your runtime version differs from the peer range, grant a per-profile compatibility exemption (`compatibility.json`).
 
 A ready-made composition example lives at [`muse.cordis.yml`-style bundles](docs/install-notes.md).
