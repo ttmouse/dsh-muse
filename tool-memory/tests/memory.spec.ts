@@ -39,6 +39,15 @@ function tool(): Tool {
 }
 
 describe('tool-memory', () => {
+  it('appends multiple entries once and deduplicates repeated saves', async () => {
+    await tool().execute({ content: 'alpha', kind: 'preference' } as never, exec)
+    await tool().execute({ content: 'beta', kind: 'lesson' } as never, exec)
+    await tool().execute({ content: 'alpha', kind: 'preference' } as never, exec)
+    const text = readFileSync(memoryFilePath(), 'utf8')
+    expect(text.match(/# Muse memory/g)).toHaveLength(1)
+    expect(text.match(/alpha/g)).toHaveLength(1)
+    expect(text.match(/beta/g)).toHaveLength(1)
+  })
   it('registers memory_save and the muse:memory prompt context', () => {
     expect(registered.tools.map(t => t.name)).toEqual(['memory_save'])
     expect(registered.contexts[0]?.name).toBe('muse:memory')
