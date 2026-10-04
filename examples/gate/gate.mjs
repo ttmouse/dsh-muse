@@ -23,8 +23,10 @@
 import { existsSync, unlinkSync, readFileSync, appendFileSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { createHash, randomUUID } from 'node:crypto'
+import { homedir } from 'node:os'
 import { parseArgs } from 'node:util'
 import { callRpc, llmJson, logDecision as sharedLog } from '../lib/dsh-client.mjs'
+import { pollImap } from './sources/imap.mjs'
 
 const { values: args } = parseArgs({
   args: process.argv.slice(2),
@@ -59,6 +61,15 @@ const SENSITIVE_PATTERNS = [
 ]
 function isSensitive(text) { return SENSITIVE_PATTERNS.some(p => p.test(text)) }
 
+/** Read a named key from the local credentials file (never leaves the machine). */
+function readCredRef(key) {
+  try {
+    const line = readFileSync(join(process.env.HOME ?? homedir(), '.dsh', '.credentials.yaml'), 'utf8')
+      .split('\n').find(l => l.trim().startsWith(`${key}:`))
+    return line?.split(':').slice(1).join(':').trim().replaceAll("'", '') ?? undefined
+  } catch { return undefined }
+}
+
 // ---- P1: http-poll source — poll an external API, report only NEW items since last run ----
 async function pollHttp(rule) {
   const res = await fetch(rule.url, { headers: rule.headers ?? {} })
@@ -84,6 +95,18 @@ async function pollHttp(rule) {
 }
 
 for (const rule of rules) {
+  if (rule.type === 'imap') {
+    try {
+      const password = rule.passwordRef ? readCredRef(rule.passwordRef) : rule.password
+      if (!password) { logDecision(`imap skipped: no password for ${rule.user}`); continue }
+      for (const m of await pollImap({ ...rule, password })) {
+        const text = `${m.subject}（来自 ${m.from}）`
+        if (isSensitive(text)) { logDecision(`sensitive dropped: ${text.slice(0, 60)}`); continue }
+        hits.push({ message: text, consume: undefined })
+      }
+      if (rule.markSeen) { /* seen flags already set by pollImap */ }
+    } catch (error) { console.error(`gate: imap failed: ${String(error).slice(0, 160)}`) }
+  }
   if (rule.type === 'http-poll') {
     try {
       for (const hit of await pollHttp(rule)) {
