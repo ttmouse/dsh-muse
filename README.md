@@ -12,6 +12,7 @@ Two DSH plugins + a set of experience recipes that replicate the core feel of [M
 |---|---|
 | [`muse/`](muse/) — `@deepseek-ai/dsh-muse` | Persists your autonomy grant as a `muse/intent` session event; a keeper re-arms disarmed active goals on session resume, so long-running goals survive process restarts |
 | [`tool-muse/`](tool-muse/) — `@deepseek-ai/dsh-tool-muse` | The `muse_autonomy` model tool: only a direct human request can grant or revoke autonomy; auto-continuations and subagents are always rejected |
+| [`tool-memory/`](tool-memory/) — `@deepseek-ai/dsh-tool-memory` | `memory_save` tool + per-turn memory injection over a human-editable plain-text memory file (`~/.dsh/memories/main.md`) — the "gets smarter over time" piece |
 | [`docs/`](docs/) | Mechanism analysis, proactivity design (event-driven + speak/not-speak gate), install notes, release checklist |
 
 Security boundary inherited from `dsh-goal`: activation never auto-inherits. Manual disarm always wins; paused/blocked goals are never auto-resumed.

@@ -12,6 +12,7 @@
 |---|---|
 | [`muse/`](muse/) — `@deepseek-ai/dsh-muse` | 把你的自治授权持久化为 `muse/intent` 会话事件；keeper 在会话恢复时重新武装已 disarm 的 active 目标，长期目标因此能跨进程重启延续 |
 | [`tool-muse/`](tool-muse/) — `@deepseek-ai/dsh-tool-muse` | `muse_autonomy` 模型工具：只有人类的直接请求能授予/撤销自治；自动续跑与子代理一律拒绝 |
+| [`tool-memory/`](tool-memory/) — `@deepseek-ai/dsh-tool-memory` | `memory_save` 工具 + 每 turn 记忆注入，存储为人类可编辑的纯文本（`~/.dsh/memories/main.md`）——「越用越懂你」的那一块 |
 | [`docs/`](docs/) | 机制分析、主动触发设计、安装踩坑、发布清单 |
 
 安全边界继承自 `dsh-goal`：activation 永不自动继承。手动 disarm 永远优先；paused/blocked 目标不会被擅自恢复。

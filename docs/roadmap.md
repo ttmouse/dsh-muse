@@ -16,7 +16,7 @@
 **验收**：配置一个 Gmail/IMAP source，真实邮件到达 → 主线收到注入，无事时零痕迹。
 **成本**：中等（gate 骨架已就绪，主要是 source 适配器 + 凭据接入）。
 
-## P2 记忆 seam——决定像不像「你的」Muse
+## P2 记忆 seam——决定像不像「你的」Muse ✅ 最小版已实现（tool-memory）
 
 **Muse 体感**：夜里学习、越用越懂你、记忆文件可读可编辑。
 **现状**：跨会话只有 AGENTS.md（指令语义，不是记忆）。
@@ -30,6 +30,7 @@
 
 **验收**：告诉它一个偏好 → 跨会话新对话里生效；用户手改文件 → 立即生效；过期记忆被心跳归档。
 **成本**：中等偏小（工具 + 注入点都是 DSH 现成接缝）。
+**已实现（2026-10-05）**：`tool-memory` 包——`memory_save` 工具（kind: preference/fact/lesson）+ `muse:memory` 动态 prompt context（order 125，超 8000 字符截断保留最新）+ 人类可直接编辑的 `~/.dsh/memories/main.md`。6/6 测试，scratch profile 组合验证。
 
 ## P3 fuzzy 判断门（值得打扰的模型判断）✅ 已实现
 
