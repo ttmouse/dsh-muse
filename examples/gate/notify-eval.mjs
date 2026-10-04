@@ -44,4 +44,22 @@ for (const r of results) console.log(` ${r.ok ? '✓' : '✗'} [${r.class}] 判:
 console.log(`precision: ${precision === null ? 'N/A' : (precision * 100).toFixed(0) + '%'} (${notifiedImportant}/${said})`)
 console.log(`recall:    ${recall === null ? 'N/A' : (recall * 100).toFixed(0) + '%'} (${notifiedImportant}/${knownImportant})`)
 console.log(`重复通知: ${duplicates}（要求 0）`)
+
+// == round2: 边界模糊样本（无标准答案，测判断门的真实分辨率；人工复核栏留空） ==
+const AMBIGUOUS = [
+  { text: '你上周说想学的 Rust，今天有个入门工作坊开放报名（本周日）' },
+  { text: '微博上有人转发你三年前的项目并 @了你，语气中性' },
+  { text: '你的域名还有 45 天到期' },
+  { text: '住在同小区的邻居问你要不要拼单买水果' },
+  { text: '你常去的健身房这个月有老会员半价续费' },
+]
+console.log('\n== round2 边界模糊样本（判定仅供人工复核，不计对错）==')
+for (const s of AMBIGUOUS) {
+  const v = await llmJson(
+    'You are the notification gate of a personal agent. Decide if this message is worth INTERRUPTING the user in their main conversation. Say yes only for: meaningful new progress on their goals, something needing their decision/action, or time-sensitive items. Reject: routine checks, test noise, marketing, anything they did not ask to be notified about. Reply ONLY strict JSON: {"worth_saying": boolean, "reason": "<=20 words"}',
+    s.text,
+  )
+  console.log(` [${v.worth_saying ? '说' : '默'}] ${s.text.slice(0, 40)} — ${v.reason}`)
+}
+
 console.log(`误判明细: ${results.filter(r => !r.ok).map(r => `[${r.class}] ${r.reason}`).join(' ; ') || '无'}`)
