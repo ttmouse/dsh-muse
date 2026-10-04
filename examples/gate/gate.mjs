@@ -122,6 +122,33 @@ if (existsSync(signalPath)) {
   const first = text.split('\n').map(l => l.trim()).find(l => l && !l.startsWith('#')) ?? 'Signal'
   hits.push({ message: first, consume: signalPath })
 }
+// ---- memory self-heal: collapse duplicate headers/entries written by pre-fix runtimes ----
+function normalizeMemory(text) {
+  const seen = new Set()
+  const body = []
+  for (const raw of text.split('\n')) {
+    const line = raw.replace(/\s+$/, '')
+    if (line.startsWith('# Muse memory') || (line.startsWith('>') && line.includes('Human-editable'))) continue
+    if (line === '' && (body.at(-1) === '' || body.length === 0)) continue
+    if (line !== '' && line !== '…(older memories trimmed)') {
+      if (seen.has(line)) continue
+      seen.add(line)
+    }
+    body.push(line)
+  }
+  while (body.at(-1) === '') body.pop()
+  return ['# Muse memory', '', '> Human-editable. One `- [timestamp] (kind) content` line per memory. The agent appends via memory_save and reads this file every turn.', '', ...body, ''].join('\n')
+}
+
+try {
+  const memPath = join(process.env.DSH_HOME ?? join(homedir(), '.dsh'), 'memories', 'main.md')
+  if (existsSync(memPath)) {
+    const raw = readFileSync(memPath, 'utf8')
+    const fixed = normalizeMemory(raw)
+    if (fixed !== raw) writeFileSync(memPath, fixed, { mode: 0o600 })
+  }
+} catch {}
+
 if (hits.length === 0) process.exit(0) // ← the whole point: silence, zero trace
 
 // ---- judge gate (P3): a cheap LLM decides whether this is worth interrupting ----
