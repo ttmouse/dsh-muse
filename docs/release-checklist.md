@@ -38,7 +38,7 @@
 - [ ] 按 README 从零在干净 profile 装一遍（不依赖本机已有状态），记录堵点并修
 - [ ] 体验指南三步（持续推进/重启恢复/静默心跳）在干净环境各走通一次
 
-## 附带工作项（发布前可选，发布后继续）
+## 附带工作项
 
-- [ ] 对话外闸门 ingress v0（确定性预检 → sessions/prompt 注入；待定位回环鉴权 401 的 token 来源）
-- [ ] 事件源 ingress（webhook/file-watch → 唤醒）
+- [x] 对话外闸门 ingress v0：确定性预检 + 签名 cookie 注入主线（`examples/gate/`，端到端实测含真实注入）
+- [ ] 事件源 ingress（webhook/file-watch → 唤醒）——gate.mjs 的规则层即挂载点
