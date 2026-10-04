@@ -32,8 +32,8 @@ JXA runner 明确处理「host busy / 执行超限」超时——系统自动化
 
 ## 行动项
 
-- [ ] gate 新增 `jxa-calendar` source：osascript 读未来 24h 日历事件 → 判断门 → 会前提醒（C2 的本机替代实现，无 OAuth）
-- [ ] source 规则支持 `permissionGuide` 文案字段；gate EPERM 时输出引导
+- [x] gate 新增 `jxa-calendar` source：JXA 读日历事件 → 判断门 → 提醒（已实测捕获节假日事件）
+- [x] source 规则支持 `permissionGuide` 文案字段；权限失败时输出引导（imap/jxa 实测）
 - [ ] 远期：凭证迁 keychain（暂缓，yaml 0600 够用）
 
 ---

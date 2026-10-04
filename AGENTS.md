@@ -20,6 +20,7 @@
 | 发布新版本 / 加新包 | [docs/release-checklist.md](docs/release-checklist.md)（包元数据、files 白名单、构建顺序 `pnpm build`） |
 | 改主动触发的节奏或语义 | [docs/heartbeat-recipes.md](docs/heartbeat-recipes.md) + [docs/proactivity-design.md](docs/proactivity-design.md)（唤醒与打扰分离是设计核心） |
 | 判断「还缺什么才算像 Muse」 | [docs/roadmap.md](docs/roadmap.md) + [docs/gaps.md](docs/gaps.md) |
+| 任务产出适合可视化/交互呈现（仪表盘/追踪器/指南） | [docs/artifacts-design.md](docs/artifacts-design.md)——生成自包含 HTML Artifacts 到 `artifacts/`，而非长文本回复 |
 
 ## 构建与验证
 
