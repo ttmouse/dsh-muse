@@ -42,12 +42,14 @@
     {
       "id": "B03",
       "title": "记忆纠正后减少重复解释",
-      "status": "ready",
+      "status": "active",
       "problem": "记忆存储通过测试，尚不能证明跨轮纠正和项目隔离的真实体感。",
       "hypothesis": "同一组事实纠正与项目切换场景可定位错误召回，并检验用户重复解释是否减少。",
       "scenario": "E4",
       "next_action": "准备两个合成项目的冲突事实，复用现有 memory 测试，再在 scratch profile 验证召回。",
-      "evidence": []
+      "evidence": [
+        "R-B03-exp1: 证实纠正与过时记忆共存（记忆污染），修复方向=supersede 语义"
+      ]
     },
     {
       "id": "B04",
