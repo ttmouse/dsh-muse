@@ -59,7 +59,6 @@ try {
     }
   }
   recent = lines.slice(-Number(args.history)).join('\n') || '(no conversation text yet)'
-  console.error('DBG lines:', lines.length, 'records:', (page.records ?? []).length)
 } catch (error) {
   logDecision(projectDir, 'reflect-decisions.log', `history unavailable: ${String(error).slice(0, 120)}`)
 }
