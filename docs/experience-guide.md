@@ -30,3 +30,14 @@
 
 效果好：目标明确、可验证、触发源是时间和目标本身——每日调研报告、定时巡检目录/项目、长期整理笔记或代码库。
 效果差（暂不支持）：需要外部事件触发（新邮件/日历）、需要记住跨会话偏好的活——对应 ingress 和记忆 seam 两个未建层，见 [gaps.md](gaps.md)。
+
+## 4. 零痕迹主动闸门（gate，适合追求「无事完全安静」的用户）
+
+```bash
+# 放一个信号文件，然后跑闸门
+echo '[gate] 该喝水了，你已经连续工作 2 小时' > MUSE-SIGNAL.md
+node examples/gate/gate.mjs --session <你的会话id> --url http://127.0.0.1:<端口>
+# → agent 会在主线收到这条消息；删掉信号文件后重复跑，无事发生时零输出
+```
+
+挂到 launchd/cron 每分钟执行即可实现「每分钟检查、无事先全静默」。见 [examples/gate/README.md](../examples/gate/README.md)。
