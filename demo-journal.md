@@ -15,3 +15,4 @@
 - [2026-10-05 02:55 +08:00] 心跳：检查项目目录与 journal，无异常、无新增信号；本轮开发成果已在会话内实时汇报，结论：不说
 - [2026-10-05 02:50 +08:00] tool-memory 已装入网页端 profile（dsh plugin add + allow-version 豁免，dump-config 组合树含 tool-memory）；web 重启后 memory_save 与每 turn 记忆注入即对用户会话生效。另：新增 muse-status.sh 状态脚本与空候选守卫修复。
 - [2026-10-05 03:00 +08:00] tool-memory 装入桌面端 profile（dep link + patch insert + 豁免）；桌面重启后两端记忆互通。另：用户从另一对话加记忆未达——因彼运行时未装载 tool-memory，已向用户说明需重启生效。
+- [2026-10-05 03:10 +08:00] dsh-email 双端安装完成：网页端（CLI，tool-email 已在组合树）+ 桌面端（dep github 源 + patch insert + 精确版本豁免 dsh-email@0.15.3，模块加载验证）。两端重启宿主后即可在设置页配 Gmail。新增记忆教训：结果型意图一口气做完不中途请示（已进注入记忆）。
