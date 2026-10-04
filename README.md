@@ -53,6 +53,8 @@ A ready-made composition example lives at [`muse.cordis.yml`-style bundles](docs
 - [docs/gaps.md](docs/gaps.md) — what's implemented vs. what Muse has that we don't (event ingress, memory seam, external notify)
 - [docs/install-notes.md](docs/install-notes.md) — cross-version install gotchas (metadata, exemptions, hot-mount)
 - [docs/FAQ.md](docs/FAQ.md) — common errors and fixes
+- [docs/capability-checklist.md](docs/capability-checklist.md) — 27-item Muse parity checklist (live status)
+- [examples/habits/](examples/habits/) — cross-project habit miner (feeds proactive ideas)
 - [examples/gate/](examples/gate/) — out-of-conversation proactive gate: zero-trace checks, inject only when it matters
 - [docs/heartbeat-recipes.md](docs/heartbeat-recipes.md) — copy-paste silent-heartbeat / proactive-report recipes
 - [docs/release-checklist.md](docs/release-checklist.md) — what "GitHub-ready" means here
