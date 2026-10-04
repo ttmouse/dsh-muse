@@ -127,6 +127,7 @@ if (hits.length === 0) process.exit(0) // ← the whole point: silence, zero tra
 // ---- judge gate (P3): a cheap LLM decides whether this is worth interrupting ----
 const message = hits.map(h => h.message).join('\n')
 if (args.judge) {
+  if (!message.trim()) { logDecision('skip: empty candidate message'); process.exit(0) }
   const verdict = await judgeWorthy(message)
   logDecision(`judge: ${verdict.worth_saying ? 'SAY' : 'SKIP'} — ${verdict.reason}`)
   if (!verdict.worth_saying) {

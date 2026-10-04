@@ -57,7 +57,7 @@
 **已实现（2026-10-05）**：gate 预检层确定性滤除验证码/密码重置/免密登录链接（SENSITIVE_PATTERNS），敏感内容永不进入 agent 上下文——带注入诱导的 feed 条目实测被拦。
 **成本**：中等；**必须在 P1 接邮箱之前或同时做**。
 
-## P6 守护化 + P7 人设（低优先，独立小件）
+## P6 守护化 + P7 人设（低优先，独立小件）✅ P6 已实现（gate/reflect 已由 launchd 托管，set-cadence-all.sh 一条命令调频）；P7 并入记忆件（persona 作为记忆条目）
 
 - 守护化：launchd 托管 `dsh web`（KeepAlive），崩溃自恢复。薄，但依赖冷唤醒补全（schedule/goal 的重启重放）才值得。
 - 人设：persona 运行时演化 = 记忆文件的一部分（P2 的 persona 段），不单独做。
