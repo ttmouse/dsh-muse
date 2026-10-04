@@ -10,9 +10,12 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-goal'
 import { latestAutonomy } from './domain.ts'
 import { museSessionEvents } from './session-events.ts'
+import { MuseRoutines } from './routines.ts'
 
 export { latestAutonomy, MUSE_INTENT_VERSION, museIntentChange, MuseIntentError } from './domain.ts'
 export { museSessionEvents } from './session-events.ts'
+export { MuseRoutines, nextOccurrence } from './routines.ts'
+export type { Routine, RoutineRequest } from './routines.ts'
 export type { MuseIntentChange } from './types.ts'
 
 export const name = 'muse'
@@ -26,19 +29,13 @@ export interface Config {
    * never grants standing autonomy.
    */
   defaultAutonomy: boolean
+  routinePollSeconds?: number
 }
 
 export const Config: z<Config> = z.object({
   defaultAutonomy: z.boolean().default(false),
+  routinePollSeconds: z.number().min(1).max(3600).default(60),
 })
-
-interface ResolvedConfig {
-  defaultAutonomy: boolean
-}
-
-function resolveConfig(config: Config): ResolvedConfig {
-  return { defaultAutonomy: config.defaultAutonomy }
-}
 
 /**
  * Mount the autonomy keeper.
@@ -46,7 +43,7 @@ function resolveConfig(config: Config): ResolvedConfig {
  * @param config - validated plugin configuration.
  */
 export function apply(ctx: Context, config: Config): void {
-  const resolved = resolveConfig(config)
+  new MuseRoutines(ctx, config.routinePollSeconds ?? 60)
   /* One autonomy decision per live-agent epoch: an epoch re-runs only after
    * this plugin reloads, mirroring goal-round-driver's no-inherited-authority
    * rule at the keeper layer. */
@@ -54,10 +51,10 @@ export function apply(ctx: Context, config: Config): void {
 
   const rearm = (agent: Agent): void => {
     if (handled.has(agent)) return
-    handled.add(agent)
-
-    const autonomy = latestAutonomy(museSessionEvents(agent.session)) ?? resolved.defaultAutonomy
+    // Deployment configuration never substitutes for a direct human grant.
+    const autonomy = latestAutonomy(museSessionEvents(agent.session)) ?? false
     if (!autonomy) return
+    handled.add(agent)
 
     const view = ctx.goals.get(agent)
     if (view === undefined || view.phase !== 'active' || view.activation === 'armed') return

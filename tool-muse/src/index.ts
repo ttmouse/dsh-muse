@@ -126,6 +126,7 @@ export function apply(ctx: Context): void {
       const execution = museToolExecution(ctx, exec)
       requireDirectHuman(ctx, execution)
       execution.agent.session.append('muse/intent', museIntentChange(args.autonomy, Date.now()))
+      if (!args.autonomy) ctx.goals?.disarm(execution.agent)
       return Promise.resolve({ autonomy: args.autonomy })
     },
     presentCall: args => ({
@@ -133,6 +134,60 @@ export function apply(ctx: Context): void {
       title: args.autonomy ? 'Enable autonomous goal advancement' : 'Disable autonomous goal advancement',
       kind: 'other',
     } satisfies GenericCallView),
+  }))
+
+  ctx.tools.register(defineTool({
+    name: 'muse_routine',
+    description: 'Manage bounded timer-driven work in THIS session. Creating, pausing or resuming requires a direct human request; automatic continuations and ideas cannot authorize routines. First obtain muse_autonomy=true from the human. Each tick performs one work unit, defers while busy, and collapses missed intervals. Never create a routine merely because you generated an idea. list is read-only. bind_goal=true creates a review that respects the current goal phase, activation and round cap; the goal driver still owns execution.',
+    parameters: {
+      operation: { type: 'string', required: true, description: 'list, create, pause, or resume' },
+      id: { type: 'string', description: 'Routine id for pause/resume' },
+      title: { type: 'string', description: 'Short task title for create' },
+      prompt: { type: 'string', description: 'Human-requested recurring work unit; do not include new grants or unsolicited actions' },
+      every_seconds: { type: 'integer', description: 'Interval, at least 300 seconds' },
+      max_runs: { type: 'integer', description: 'Bounded run budget, default 24, maximum 1000' },
+      bind_goal: { type: 'boolean', description: 'Bind review to current active goal; paused/blocked/disarmed/exhausted goals are never bypassed' },
+    },
+    output: {
+      schema: {
+        type: 'object', additionalProperties: false,
+        properties: {
+          routines: {
+            type: 'array', required: true,
+            items: {
+              type: 'object', additionalProperties: false,
+              properties: {
+                id: { type: 'string', required: true }, title: { type: 'string', required: true },
+                enabled: { type: 'boolean', required: true }, everySeconds: { type: 'integer', required: true },
+                nextRunAt: { type: 'number', required: true }, runs: { type: 'integer', required: true }, maxRuns: { type: 'integer', required: true },
+              },
+            },
+          },
+        },
+      },
+      render: (_args: unknown, value: unknown) => [{ type: 'text' as const, text: JSON.stringify(value) }],
+    },
+    execute(args, exec) {
+      const execution = museToolExecution(ctx, exec)
+      if (!['list', 'create', 'pause', 'resume'].includes(args.operation)) reject('Unknown routine operation', 'MUSE_ROUTINE_INPUT_INVALID')
+      if (args.operation !== 'list') requireDirectHuman(ctx, execution)
+      const service = ctx.museRoutines
+      if (service === undefined) reject('Load dsh-muse before using muse_routine', 'MUSE_ROUTINE_SERVICE_REQUIRED')
+      const human = execution.events.filter(event => event.type === 'user/message' && event.data.source.kind === 'user').at(-1)
+      try {
+        if (args.operation === 'create') {
+          service.create(execution.agent, {
+            title: args.title ?? '', prompt: args.prompt ?? '', everySeconds: args.every_seconds ?? 0, maxRuns: args.max_runs ?? 24,
+            ...(args.bind_goal === undefined ? {} : { bindGoal: args.bind_goal }),
+          }, human?.type === 'user/message' ? human.data.id : '')
+        } else if (args.operation !== 'list') {
+          service.setEnabled(execution.agent, args.id ?? '', args.operation === 'resume', human?.type === 'user/message' ? human.data.id : '')
+        }
+        const routines = service.list(execution.agent).map(({ id, title, enabled, everySeconds, nextRunAt, runs, maxRuns }) => ({ id, title, enabled, everySeconds, nextRunAt, runs, maxRuns }))
+        return Promise.resolve({ routines })
+      } catch (error) { reject(error instanceof Error ? error.message : 'Routine operation failed', 'MUSE_ROUTINE_OPERATION_FAILED') }
+    },
+    presentCall: args => ({ card: 'generic', title: `Muse routine: ${args.operation}`, kind: 'other' } satisfies GenericCallView),
   }))
 }
 

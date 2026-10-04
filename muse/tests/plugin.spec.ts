@@ -84,7 +84,7 @@ describe('Muse plugin composition', () => {
     expect(ctx.goals.get(other.agent)?.phase).toBe('paused')
   })
 
-  it('applies defaultAutonomy to sessions without an explicit intent', async () => {
+  it('never lets deployment defaultAutonomy grant authority without a human intent', async () => {
     const ctx = await harness()
     await ctx.plugin(muse, { defaultAutonomy: true })
     const root = await ctx.agents.create({ sessionId: SessionId('muse-default') })
@@ -92,7 +92,7 @@ describe('Muse plugin composition', () => {
     ctx.goals.disarm(root.agent)
     agentEvents(ctx, root.agent).emit('agent/status', { status: 'idle' })
     await settle()
-    expect(ctx.goals.get(root.agent)?.activation).toBe('armed')
+    expect(ctx.goals.get(root.agent)?.activation).toBe('disarmed')
   })
 
   it('leaves a disarmed active goal alone when its round budget is exhausted', async () => {
