@@ -88,3 +88,14 @@ Cookie: dsh-auth-<b64url(sha256(authority))>=v1.<b64url(json payload)>.<b64url(h
 ```
 
 **安全红线（P5）**：所有候选消息先过确定性敏感滤除（验证码/密码重置/免密登录链接），敏感内容在预检层丢弃、永不进入 agent 上下文——这是接邮箱类高价值账号的前提。
+
+## 本机节奏管理（已实测装好）
+
+```bash
+./set-cadence-all.sh 600 1800   # gate 10 分钟、reflect 30 分钟
+./set-cadence-all.sh 600 600    # 都 10 分钟（白天高频迭代）
+./set-cadence-all.sh 1800 3600  # 睡觉时放慢：gate 30 分钟、reflect 1 小时
+```
+
+会话 id 与端口在 `gate/local-config.env`。launchd 日志：`/tmp/dsh-muse-gate.log`、`/tmp/dsh-muse-reflect.log`。
+IMAP 邮件源：在 `gate/local-rules.json` 加 `{"type":"imap","host":"imap.gmail.com","port":993,"user":"你@gmail.com","passwordRef":"MUSE_IMAP_PASSWORD","markSeen":true}`，密码存 `~/.dsh/.credentials.yaml` 的 `MUSE_IMAP_PASSWORD:` 键。
