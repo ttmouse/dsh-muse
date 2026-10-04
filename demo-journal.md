@@ -39,3 +39,4 @@
 - [2026-10-05 04:40 +08:00] 推进单元：补全并发重构遗留的 lib/reflection.mjs（reflectionText + validateReflection），reflect 全链路真实运行通过（指纹去重 + 严格校验 + scope 落盘）。
 - [2026-10-05 04:55 +08:00] 推进单元：persona 演化补回新版 reflect（prompt 仅从人类消息学习人格、注入防御强化、appendMemory 锁写入）；真实运行验证保守判定正确。
 - [2026-10-05 04:57 +08:00] 推进单元：memory-maintenance 挂 launchd（每周日 04:00，>45 天条目归档）——B3 记忆生命周期完整闭环（整理+归档+调度）。
+- [2026-10-05 04:45 +08:00] 推进单元：jxa-calendar source 完成并实测（11 日历读取、7 天窗口捕获寒露/国庆调休、中文解析 OK）——C2 事件感知的本机路线打通，无需 OAuth。
