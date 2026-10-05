@@ -127,13 +127,13 @@ export function apply(ctx: Context): void {
       const cwd = context.agent?.session.header.cwd ?? process.cwd()
       const projectPath = projectMemoryFilePath(cwd)
       const projectMemory = readMemory(4000, projectPath)
+      const identity = identityContextText()
       const parts: string[] = []
+      if (identity !== '') parts.push(identity)
       if (globalMemory !== '') parts.push(globalMemory)
       if (projectMemory !== '') parts.push(`## Project memory (${cwd})\n\n${projectMemory}`)
       if (parts.length === 0) return ''
-      const identity = identityContextText()
-      const identityBlock = identity ? `${identity}\n\n` : ''
-      return `${identityBlock}## User memory (human-editable, treat as durable context)\n\n${parts.join('\n')}`
+      return `${parts.join('\n\n')}`
     },
   })
 
