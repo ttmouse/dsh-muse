@@ -20,11 +20,11 @@
     {
       "id": "B01",
       "title": "建立真实任务的持续推进基线",
-      "status": "active",
+      "status": "waiting",
       "problem": "包测试已覆盖冷恢复，但当前没有本轮核验的 24 小时真实体验样本。",
       "hypothesis": "有限 routine 在完成、等待、静默和恢复场景中能产出成果，且不重复执行或通知。",
       "scenario": "E1,E2,E3,E5",
-      "next_action": "按 evaluation.md 准备合成任务与脱敏计数表；核查 DSH 的现有目标和直接授权，授权成立后开始有限试运行；未成立则 waiting，继续离线可做项。",
+      "next_action": "等待解除条件：用户在 DSH 主会话直接发出真实推进请求（绑定 muse_autonomy/muse_routine 授权）。解除后置 active 并启动 24h 有限试运行（计数表 docs/evolution/trial-counting.md）。",
       "evidence": []
     },
     {
