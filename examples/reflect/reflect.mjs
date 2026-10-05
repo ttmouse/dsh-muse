@@ -92,6 +92,14 @@ for (const addition of verdict.memory_additions) {
   if (!args['dry-run'] && appendMemory(path, addition.content, addition.kind)) added++
 }
 if (verdict.idea.worth_saying && verdict.idea.text) {
+  const ideasPath = join(home, 'muse', 'ideas.json')
+  let ideas
+  try { ideas = JSON.parse(read(ideasPath) || '{"ideas":[]}') } catch { ideas = { ideas: [] } }
+  if (!Array.isArray(ideas.ideas)) ideas.ideas = []
+  if (!ideas.ideas.some(i => i.text === verdict.idea.text)) {
+    ideas.ideas.unshift({ at: new Date().toISOString(), text: verdict.idea.text })
+    if (!args['dry-run']) atomicJson(ideasPath, ideas)
+  }
   const text = `[muse-idea] ${verdict.idea.text}（这是提议，只有你明确要求后才执行）`
   if (args['dry-run']) console.log(`reflect: would queue proposal: ${text}`)
   else await injectPrompt(args.url, args.session, text, 'idea')
