@@ -27,7 +27,8 @@
       "next_action": "解除条件：在 DSH 主会话直接触发 E1 三输出合成任务；等待观察跨满 24h 后补真实日志；取得用户体感评价。Codex 目标轮次不替代 DSH 人类触发。",
       "evidence": [
         "R-B01-obs",
-        "R-B01-waiting"
+        "R-B01-waiting",
+        "R-S1-readiness"
       ]
     },
     {
@@ -211,6 +212,16 @@
       "summary": "语料库化完成；发现并回归 1 个真实漏报（周会时限）",
       "evidence": [
         "docs/evolution/rounds/2026-10-05-b02-r4.md"
+      ]
+    },
+    {
+      "id": "R-S1-readiness",
+      "candidate": "B01",
+      "decision": "inconclusive",
+      "level": "runtime",
+      "summary": "S1 就绪度评估：硬门槛全过，E 覆盖 4/5+2 部分；缺用户反馈与 24h 完整窗口",
+      "evidence": [
+        "docs/evolution/rounds/2026-10-05-s1-readiness.md"
       ]
     }
   ]
