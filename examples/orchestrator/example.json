@@ -2,6 +2,8 @@
   "schema_version": 1,
   "mode": "dry-run",
   "project": "synthetic-multi-goal-demo",
+  "execution_mode": "routine-led",
+  "same_scope_goal_driver_armed": false,
   "sample_now": "2026-10-05T12:00:00.000Z",
   "authority": {
     "human_direct_turn_required": true,

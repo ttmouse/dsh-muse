@@ -7,10 +7,14 @@ const plan = JSON.parse(readFileSync(process.argv[2] ?? fixture, 'utf8'))
 const fail = message => { throw new Error(message) }
 
 if (plan.schema_version !== 1 || plan.mode !== 'dry-run') fail('Expected a version 1 dry-run manifest')
+if (!['goal-led', 'routine-led'].includes(plan.execution_mode)) fail('execution_mode must be goal-led or routine-led')
+if (plan.execution_mode === 'routine-led' && plan.same_scope_goal_driver_armed !== false) {
+  fail('Routine-led mode requires the same-scope goal driver to be unarmed')
+}
 if (!plan.authority?.human_direct_turn_required || !plan.authority?.autonomy_grant_required_for_routine_management
   || plan.authority?.worker_grants_authority !== false) fail('Authority boundary is missing or unsafe')
-if (!Array.isArray(plan.workstreams) || plan.workstreams.length === 0 || plan.workstreams.length > 8) {
-  fail('A session requires 1..8 workstreams in this example')
+if (!Array.isArray(plan.workstreams) || plan.workstreams.length === 0) {
+  fail('At least one workstream is required')
 }
 if (!Number.isFinite(Date.parse(plan.sample_now))) fail('sample_now must be an ISO date')
 
@@ -27,6 +31,8 @@ for (const item of plan.workstreams) {
   if (!Number.isSafeInteger(item.runs) || item.runs < 0 || item.runs > item.max_runs) fail(`${item.id}: runs outside budget`)
   if (!Number.isFinite(Date.parse(item.next_run_at))) fail(`${item.id}: next_run_at must be an ISO date`)
 }
+const enabledCount = plan.workstreams.filter(item => ['ready', 'active'].includes(item.status) && item.runs < item.max_runs).length
+if (enabledCount > 8) fail('A session supports at most eight enabled routines')
 
 const now = Date.parse(plan.sample_now)
 const due = plan.workstreams
