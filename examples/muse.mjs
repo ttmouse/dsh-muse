@@ -12,7 +12,7 @@ import { join, dirname } from 'node:path'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const root = join(here, '..')
-const gate = join(here, '..', 'gate')
+const gate = join(here, 'gate')
 const run = (cmd, opts = {}) => execFileSync(cmd, opts, { stdio: 'inherit', timeout: 120000 })
 const runNode = (script, scriptArgs = [], opts = {}) => run(process.execPath, [script, ...scriptArgs], opts)
 
