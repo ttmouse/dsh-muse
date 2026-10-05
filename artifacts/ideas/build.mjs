@@ -3,7 +3,8 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 const dshHome = process.env.DSH_HOME ?? join(import.meta.dirname, '..', '..', '..', '..')
 const src = join(dshHome, 'muse', 'ideas.json')
-const ideas = existsSync(src) ? JSON.parse(readFileSync(src, 'utf8')).ideas : []
+let ideas = []
+try { ideas = JSON.parse(readFileSync(src, 'utf8')).ideas ?? [] } catch { ideas = [] }
 const rows = ideas.length > 0
   ? ideas.map(i => `<div class="idea"><div class="meta">${i.at.slice(0, 16).replace('T', ' ')}</div><div class="text">${i.text.replaceAll('<', '&lt;')}</div></div>`).join('\n')
   : '<div class="empty">还没有值得提出的想法——它们会在反思循环发现时出现在这里。</div>'

@@ -20,7 +20,7 @@
  * the local credential record (owner-only ~/.dsh/.credentials.yaml). Never
  * leaves the machine; requires the script to run as the same OS user.
  */
-import { existsSync, unlinkSync, readFileSync, appendFileSync, mkdirSync, writeFileSync } from 'node:fs'
+import { existsSync, unlinkSync, readFileSync, appendFileSync, mkdirSync, writeFileSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { createHash } from 'node:crypto'
 import { homedir } from 'node:os'
@@ -158,6 +158,18 @@ if (existsSync(signalPath)) {
   const first = text.split('\n').map(l => l.trim()).find(l => l && !l.startsWith('#')) ?? 'Signal'
   hits.push({ message: first, consume: signalPath })
 }
+// ---- A3 slice-2: keep artifacts fresh — rebuild views when their data changed ----
+try {
+  const dshHome = process.env.DSH_HOME ?? join(homedir(), '.dsh')
+  const ideasSrc = join(dshHome, 'muse', 'ideas.json')
+  const ideasHtml = join(scriptRoot, 'artifacts', 'ideas', 'ideas.html')
+  const ideasBuild = join(scriptRoot, 'artifacts', 'ideas', 'build.mjs')
+  if (existsSync(ideasSrc) && (!existsSync(ideasHtml) || statSync(ideasSrc).mtimeMs > statSync(ideasHtml).mtimeMs)) {
+    const { execFileSync } = await import('node:child_process')
+    execFileSync(process.execPath, [ideasBuild], { timeout: 15000, env: { ...process.env, DSH_HOME: dshHome } })
+  }
+} catch (error) { console.error(`artifacts refresh skipped: ${String(error).slice(0, 120)}`) }
+
 // Memory maintenance uses its own lock; the gate never rewrites memory files.
 if (hits.length === 0) process.exit(0) // ← the whole point: silence, zero trace
 
