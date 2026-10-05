@@ -20,12 +20,14 @@
     {
       "id": "B01",
       "title": "建立真实任务的持续推进基线",
-      "status": "waiting",
+      "status": "active",
       "problem": "包测试已覆盖冷恢复，但当前没有本轮核验的 24 小时真实体验样本。",
       "hypothesis": "有限 routine 在完成、等待、静默和恢复场景中能产出成果，且不重复执行或通知。",
       "scenario": "E1,E2,E3,E5",
-      "next_action": "等待解除条件：用户在 DSH 主会话直接发出真实推进请求（绑定 muse_autonomy/muse_routine 授权）。解除后置 active 并启动 24h 有限试运行（计数表 docs/evolution/trial-counting.md）。",
-      "evidence": []
+      "next_action": "试运行已在进行（本会话即真实运行载体）：计数表已填 4 条真实观察（E1/E2/E3/E5/E4 部分覆盖）。剩余：静默/等待观察跨 24h（10-06 凌晨可判）、用户首次体感反馈、E1 的 3 输出合成任务触发。",
+      "evidence": [
+        "R-B01-obs"
+      ]
     },
     {
       "id": "B02",
@@ -132,6 +134,16 @@
       "summary": "supersede 语义实现并回归测试通过",
       "evidence": [
         "docs/evolution/rounds/2026-10-05-b03-fix.md"
+      ]
+    },
+    {
+      "id": "R-B01-obs",
+      "candidate": "B01",
+      "decision": "inconclusive",
+      "level": "runtime",
+      "summary": "计数表填入 4 条真实观察（E2/E3/E5/E4；E1 部分），24h 静默观察进行中",
+      "evidence": [
+        "docs/evolution/trial-counting.md"
       ]
     }
   ]
