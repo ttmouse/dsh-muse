@@ -23,6 +23,12 @@
 | 判断「还缺什么才算像 Muse」 | [docs/evolution/evaluation.md](docs/evolution/evaluation.md) + [docs/evolution/state.json](docs/evolution/state.json)；roadmap/gaps 的旧分析仅供追溯，不能当当前排序 |
 | 任务产出适合可视化/交互呈现（仪表盘/追踪器/指南） | [docs/artifacts-design.md](docs/artifacts-design.md)——生成自包含 HTML Artifacts 到 `artifacts/`，而非长文本回复 |
 
+## 并发纪律
+
+- 无依赖关系的任务主动并行（并行子代理/多路同时推进），不默认串行排队
+- 边界：演进账本 state.json 单写者串行（loop.md 合同）；独立模块/文档/渠道并行安全
+- 判断标准：共享可变状态吗？不共享→并行派遣，共享→排队
+
 ## 构建与验证
 
 - 全量：`pnpm install && pnpm build && pnpm -r test`（根 `build` 按依赖顺序跑，勿用 `pnpm -r build` 并行）
