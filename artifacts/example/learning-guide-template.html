@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>学习指南 — <span id="title"></span></title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 640px; margin: 0 auto; padding: 16px; }
+  h1 { font-size: 1.2rem; } .desc { opacity: .7; }
+  .progress { font-size: 1.4rem; font-weight: 700; margin: 12px 0; }
+  h2 { font-size: 1rem; margin-top: 20px; }
+  label.item { display: block; padding: 6px 4px; cursor: pointer; border-bottom: 1px solid #8883; }
+  label.item input { margin-right: 8px; }
+  label.item.done { opacity: .5; text-decoration: line-through; }
+  .reset { margin-top: 16px; padding: 6px 14px; cursor: pointer; }
+</style>
+</head>
+<body>
+<h1>学习指南</h1>
+<div class="desc" id="desc"></div>
+<div class="progress"><span id="doneCount">0</span>/<span id="totalCount">0</span> 完成</div>
+<div id="modules"></div>
+<button class="reset" id="reset">重置进度</button>
+<script>
+const DATA = __DATA__;
+const KEY = 'guide-progress-' + (DATA.title || 'default');
+document.getElementById('title').textContent = DATA.title;
+document.getElementById('desc').textContent = DATA.description ?? '';
+const saved = JSON.parse(localStorage.getItem(KEY) ?? '{}');
+const total = DATA.modules.reduce((s, m) => s + m.items.length, 0);
+document.getElementById('totalCount').textContent = total;
+const isChecked = (mi, ii) => saved[`${mi}:${ii}`] ?? false;
+const render = () => {
+  const done = Object.values(saved).filter(Boolean).length;
+  document.getElementById('doneCount').textContent = done;
+  const root = document.getElementById('modules');
+  root.innerHTML = '';
+  DATA.modules.forEach((m, mi) => {
+    const h = document.createElement('h2'); h.textContent = m.name; root.appendChild(h);
+    m.items.forEach((item, ii) => {
+      const label = document.createElement('label'); label.className = 'item' + (isChecked(mi, ii) ? ' done' : '');
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = isChecked(mi, ii);
+      cb.onchange = () => { saved[`${mi}:${ii}`] = cb.checked; localStorage.setItem(KEY, JSON.stringify(saved)); render(); };
+      label.appendChild(cb); label.appendChild(document.createTextNode(item));
+      root.appendChild(label);
+    });
+  });
+};
+document.getElementById('reset').onclick = () => { localStorage.removeItem(KEY); render(); };
+render();
+</script>
+</body>
+</html>
