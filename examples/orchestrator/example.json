@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "mode": "dry-run",
+  "project": "synthetic-multi-goal-demo",
+  "sample_now": "2026-10-05T12:00:00.000Z",
+  "authority": {
+    "human_direct_turn_required": true,
+    "autonomy_grant_required_for_routine_management": true,
+    "worker_grants_authority": false
+  },
+  "workstreams": [
+    {
+      "id": "report",
+      "title": "Prepare a weekly report",
+      "status": "active",
+      "interval_seconds": 1800,
+      "max_runs": 3,
+      "runs": 1,
+      "next_run_at": "2026-10-05T11:55:00.000Z",
+      "deliverable": "report.md",
+      "acceptance": ["Contains the three synthetic findings", "Includes source fixture IDs"]
+    },
+    {
+      "id": "tracker",
+      "title": "Build a small tracker",
+      "status": "ready",
+      "interval_seconds": 3600,
+      "max_runs": 2,
+      "runs": 0,
+      "next_run_at": "2026-10-05T13:00:00.000Z",
+      "deliverable": "tracker.html",
+      "acceptance": ["Works offline", "Shows the synthetic task states"]
+    }
+  ]
+}

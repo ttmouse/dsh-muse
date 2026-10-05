@@ -2,7 +2,7 @@
   "version": 1,
   "updated": "2026-10-05",
   "stage": "S0",
-  "runtime_note": "本轮未在 DSH 创建演进 routine；该账本不是授权或调度。每天 1 轮、先运行 7 轮仅为建议，须由 DSH 直接人类 turn 绑定授权。",
+  "runtime_note": "账本不是授权或调度；B01 的 E1 任务未触发，24 小时观察窗未满。DSH 主会话的直接人类触发与评价仍待补。",
   "next": "B06",
   "candidates": [
     {
@@ -20,13 +20,14 @@
     {
       "id": "B01",
       "title": "建立真实任务的持续推进基线",
-      "status": "active",
+      "status": "waiting",
       "problem": "包测试已覆盖冷恢复，但当前没有本轮核验的 24 小时真实体验样本。",
       "hypothesis": "有限 routine 在完成、等待、静默和恢复场景中能产出成果，且不重复执行或通知。",
       "scenario": "E1,E2,E3,E5",
-      "next_action": "试运行已在进行（本会话即真实运行载体）：计数表已填 4 条真实观察（E1/E2/E3/E5/E4 部分覆盖）。剩余：静默/等待观察跨 24h（10-06 凌晨可判）、用户首次体感反馈、E1 的 3 输出合成任务触发。",
+      "next_action": "解除条件：在 DSH 主会话直接触发 E1 三输出合成任务；等待观察跨满 24h 后补真实日志；取得用户体感评价。Codex 目标轮次不替代 DSH 人类触发。",
       "evidence": [
-        "R-B01-obs"
+        "R-B01-obs",
+        "R-B01-waiting"
       ]
     },
     {
@@ -77,12 +78,14 @@
     {
       "id": "B06",
       "title": "主控编排：单对话多目标（工作者会话架构）",
-      "status": "ready",
+      "status": "active",
       "problem": "用户期望 Muse 式单对话多目标，但 DSH create_goal 单会话单目标；多会话方案违背单一对话核心体验（用户明确否决）",
       "hypothesis": "用 subagent 可继续子会话作为透明工作者、主控 muse_routine 定时巡检推进、muse-dashboard 聚合可见性，可在不改上游的前提下实现 Muse 核心体验",
       "scenario": "E1,E3,E5",
-      "next_action": "交付 examples/orchestrator/ 主控编排 playbook：工作者派生/目标合同/巡检推进/汇总汇报约定 + 可运行示例",
-      "evidence": []
+      "next_action": "验证 examples/orchestrator/ 的主控合同和只读可运行示例；标清routine授权边界，真实多目标体验仍需DSH主会话实跑。",
+      "evidence": [
+        "R-B06-orchestrator"
+      ]
     }
   ],
   "rounds": [
@@ -154,6 +157,26 @@
       "summary": "计数表填入 4 条真实观察（E2/E3/E5/E4；E1 部分），24h 静默观察进行中",
       "evidence": [
         "docs/evolution/rounds/2026-10-05-trial-counting.md"
+      ]
+    },
+    {
+      "id": "R-B01-waiting",
+      "candidate": "B01",
+      "decision": "inconclusive",
+      "level": "runtime",
+      "summary": "检查时 E1 三项输出未生成，24h 观察窗未满，DSH 直接触发和用户评价待补；B01 转 waiting",
+      "evidence": [
+        "docs/evolution/rounds/2026-10-05-b01-waiting.md"
+      ]
+    },
+    {
+      "id": "R-B06-orchestrator",
+      "candidate": "B06",
+      "decision": "inconclusive",
+      "level": "engineering",
+      "summary": "计划交付单会话多目标编排 playbook 与无副作用示例；真人授权和真实 worker/routine 运行不在本轮 Codex 主会话内模拟",
+      "evidence": [
+        "docs/evolution/rounds/2026-10-05-b06-orchestrator.md"
       ]
     }
   ]
