@@ -64,7 +64,7 @@
       "problem": "日志和活动卡不一定能回答当前在做什么、为何等待、何时停止。",
       "hypothesis": "从现有 routine list 和 goal 状态生成单一视图，可减少状态追问，不需要新调度器。",
       "scenario": "E5,E6",
-      "next_action": "在已链接本地包的独立 scratch DSH profile 真实会话中查看无 goal 与有 goal/routine 两种状态，再由用户判断同一输出是否足以说明当前工作、等待原因和剩余预算。当前集成测试已覆盖有 goal/routine；桌面交互和用户评价仍缺，不得更改生产 profile。",
+      "next_action": "由人类在 scratch DSH 选择工作区并发起一条普通请求，触发只读 muse_status；确认会话激活后浏览器自动加载 bundle，再查看无 goal/routine 时折叠摘要与展开详情。有状态分支只能用已获授权的 goal/routine 数据验证；最后由用户评价是否足以说明当前工作、等待原因和剩余预算。不得伪造人类消息或更改生产 profile。",
       "evidence": [
         "R-B04-status-tool"
       ]
@@ -198,7 +198,7 @@
       "candidate": "B04",
       "decision": "inconclusive",
       "level": "engineering",
-      "summary": "实现 session-only 只读 muse_status 与中文可读结果；构建通过，tool-muse 10/10、真实 AgentLoop 空/有状态集成及 Muse 测试 31/31；看板桌面/移动布局与筛选通过，scratch DSH 交互及用户评价仍待验证",
+      "summary": "实现 session-only 只读 muse_status 专属 Web 工具行。tool-muse 构建与 13/13 测试通过；scratch composer 就绪、manifest 含扩展，但等待 15 秒无自动 bundle 请求（显式 fetch 为 200）。真实 prompt、status 调用、折叠/展开交互、有状态分支及用户评价仍待验证",
       "evidence": [
         "docs/evolution/rounds/2026-10-05-b04-status-tool.md"
       ]
