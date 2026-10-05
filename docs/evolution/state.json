@@ -143,7 +143,7 @@
       "level": "runtime",
       "summary": "计数表填入 4 条真实观察（E2/E3/E5/E4；E1 部分），24h 静默观察进行中",
       "evidence": [
-        "docs/evolution/trial-counting.md"
+        "docs/evolution/rounds/2026-10-05-trial-counting.md"
       ]
     }
   ]
