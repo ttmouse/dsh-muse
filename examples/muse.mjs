@@ -24,6 +24,7 @@ const HELP = `muse — dsh-muse 统一入口
   patrol [args...]      跑一轮 gate 巡逻（透传 gate.mjs 参数）
   reflect [args...]     跑一轮反思（透传 reflect.mjs 参数）
   spawn "<合同>"        派生工作者会话（透传 spawn-worker.mjs）
+  wx-triage             微信深度分诊（时间线通读，超越未读计数）
   maintenance [days]    记忆生命周期维护（默认 30 天）
   ideas                 重建想法回顾页
   dashboard             重建系统健康仪表盘
