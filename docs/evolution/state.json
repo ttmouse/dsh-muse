@@ -89,7 +89,8 @@
       "scenario": "E1,E3,E5",
       "next_action": "解除条件：验证一个保留消息来源身份、且工具与文件范围可强制限制的 DSH worker 派发入口；或由用户在 DSH 主会话直接授权端到端试运行。不得用 session/prompt 或 Codex 授权替代。",
       "evidence": [
-        "R-B06-orchestrator"
+        "R-B06-orchestrator",
+        "R-24h-retro"
       ]
     }
   ],
@@ -242,6 +243,16 @@
       "summary": "E3 24h 静默/等待观察窗口 10-06 04:00 达成；判定留晨间演进轮",
       "evidence": [
         "docs/evolution/rounds/2026-10-05-s1-readiness.md"
+      ]
+    },
+    {
+      "id": "R-24h-retro",
+      "candidate": "B06",
+      "decision": "inconclusive",
+      "level": "runtime",
+      "summary": "首个 24h 全周期机制复盘：371 次巡逻零误报、2 事故闭环、watchdog 自监控新增；O2(jxa 后台超时)/O3(真实信号) 排队",
+      "evidence": [
+        "docs/evolution/rounds/2026-10-06-24h-retro.md"
       ]
     }
   ]
