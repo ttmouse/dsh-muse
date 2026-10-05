@@ -26,6 +26,29 @@ export function memoryFilePath(): string {
   return join(dshHome(), 'memories', 'main.md')
 }
 
+/** Muse identity file (E2): human-authored name/tagline/style; empty = unnamed. */
+export function identityFilePath(): string {
+  return join(dshHome(), 'muse', 'identity.json')
+}
+
+export interface MuseIdentity { name?: string; tagline?: string; style?: string }
+
+export function readIdentity(): MuseIdentity {
+  try {
+    const d = JSON.parse(readFileSync(identityFilePath(), 'utf8'))
+    return { name: d.name ?? '', tagline: d.tagline ?? '', style: d.style ?? '' }
+  } catch { return { name: '', tagline: '', style: '' } }
+}
+
+export function identityContextText(): string {
+  const id = readIdentity()
+  if (!id.name) return ''
+  const parts = [`你的名字是「${id.name}」`]
+  if (id.tagline) parts.push(`定位：${id.tagline}`)
+  if (id.style) parts.push(`风格：${id.style}`)
+  return parts.join('；') + '。'
+}
+
 /** Per-project memory file (lessons/facts scoped to one working directory). */
 export function projectMemoryFilePath(cwd = process.cwd()): string {
   return projectPath(dshHome(), cwd)
@@ -108,7 +131,9 @@ export function apply(ctx: Context): void {
       if (globalMemory !== '') parts.push(globalMemory)
       if (projectMemory !== '') parts.push(`## Project memory (${cwd})\n\n${projectMemory}`)
       if (parts.length === 0) return ''
-      return `## User memory (human-editable, treat as durable context)\n\n${parts.join('\n')}`
+      const identity = identityContextText()
+      const identityBlock = identity ? `${identity}\n\n` : ''
+      return `${identityBlock}## User memory (human-editable, treat as durable context)\n\n${parts.join('\n')}`
     },
   })
 

@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { mkdtempSync, readFileSync, existsSync, rmSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, readFileSync, existsSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import type { Context } from '@deepseek-ai/cordis'
-import { apply, memoryFilePath, normalizeMemory, projectMemoryFilePath, readMemory, supersedeEntries } from '../src/index.js'
+import { apply, memoryFilePath, normalizeMemory, projectMemoryFilePath, readMemory, supersedeEntries , readIdentity, identityContextText, identityFilePath} from '../src/index.js'
 import { appendMemory } from '../src/storage.js'
 
 type Tool = { name: string; execute: (args: never, exec: unknown) => Promise<unknown>; description: string }
@@ -112,6 +112,21 @@ describe('tool-memory', () => {
     const text = readFileSync(memoryFilePath(), 'utf8')
     expect(text).toContain('自托管服务器')
     expect(text).not.toContain('部署在 AWS')
+  })
+
+  it('identity: empty file → no identity context; named → identity prepended', () => {
+    expect(readIdentity().name).toBe('')
+    // 无名字：注入不含身份段
+    const before = registered.contexts[0]!.text({})
+    expect(before.includes('你的名字是')).toBe(false)
+    // 写入身份 → 注入含身份段
+    mkdirSync(join(process.env.DSH_HOME!, 'muse'), { recursive: true })
+    writeFileSync(identityFilePath(), JSON.stringify({ name: '小缪', tagline: '用户的 Muse', style: '简洁直接' }))
+    const id = readIdentity()
+    expect(id.name).toBe('小缪')
+    const ctx2 = registered.contexts[0]!.text({})
+    expect(ctx2.startsWith('你的名字是「小缪」；定位：用户的 Muse；风格：简洁直接。')).toBe(true)
+    expect(identityContextText()).toContain('小缪')
   })
 
   it('normalizeMemory collapses duplicate headers and repeated entries (self-heal)', () => {
