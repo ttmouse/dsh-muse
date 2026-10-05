@@ -1,0 +1,146 @@
+{
+ "_meta": {
+  "purpose": "分寸感判断门回归语料（E3 逼近路线的持久资产）",
+  "note": "expected=建议判定；humanReview=null 待用户抽查。新增样本附轮次来源。",
+  "rounds": {
+   "R1": "基线（时限/需行动/噪声）",
+   "R2": "边界模糊（无标准答案，测分辨率）",
+   "R3": "分寸感刁钻（隐私张力/关系权重/延迟价值）"
+  }
+ },
+ "samples": [
+  {
+   "text": "云服务账单将于明天到期，需确认续费方式",
+   "expected": "say",
+   "class": "A 时限",
+   "round": "R1",
+   "humanReview": null
+  },
+  {
+   "text": "客户王总询问项目进度，希望今天得到回复",
+   "expected": "say",
+   "class": "A 需回复",
+   "round": "R1",
+   "humanReview": null
+  },
+  {
+   "text": "GitHub 仓库有 3 个新 star",
+   "expected": "skip",
+   "class": "C 噪声",
+   "round": "R1",
+   "humanReview": null
+  },
+  {
+   "text": "每周技术Newsletter第42期已送达",
+   "expected": "skip",
+   "class": "B 资讯",
+   "round": "R1",
+   "humanReview": null
+  },
+  {
+   "text": "服务器磁盘使用率超过 90%，需要扩容决策",
+   "expected": "say",
+   "class": "A 需决策",
+   "round": "R1",
+   "humanReview": null
+  },
+  {
+   "text": "构建流水线第 108 次运行成功",
+   "expected": "skip",
+   "class": "C 常态",
+   "round": "R1",
+   "humanReview": null
+  },
+  {
+   "text": "您关注的开源项目发布了包含安全修复的新版本",
+   "expected": "say",
+   "class": "A 安全",
+   "round": "R1",
+   "humanReview": null
+  },
+  {
+   "text": "日历事件：例行周会 30 分钟后开始",
+   "expected": "say",
+   "class": "A 时限",
+   "round": "R1",
+   "humanReview": null
+  },
+  {
+   "text": "合作方提议将下周会议改到周四下午三点",
+   "expected": "say",
+   "class": "A 需决策",
+   "round": "R1",
+   "humanReview": null
+  },
+  {
+   "text": "你上周说想学的 Rust，今天有个入门工作坊开放报名（本周日）",
+   "expected": null,
+   "class": "边界-目标关联",
+   "round": "R2",
+   "humanReview": null
+  },
+  {
+   "text": "微博上有人转发你三年前的项目并 @了你，语气中性",
+   "expected": null,
+   "class": "边界-关系",
+   "round": "R2",
+   "humanReview": null
+  },
+  {
+   "text": "你的域名还有 45 天到期",
+   "expected": null,
+   "class": "边界-时限",
+   "round": "R2",
+   "humanReview": null
+  },
+  {
+   "text": "住在同小区的邻居问你要不要拼单买水果",
+   "expected": null,
+   "class": "边界-生活",
+   "round": "R2",
+   "humanReview": null
+  },
+  {
+   "text": "你常去的健身房这个月有老会员半价续费",
+   "expected": null,
+   "class": "边界-营销",
+   "round": "R2",
+   "humanReview": null
+  },
+  {
+   "text": "你的体检报告出了，有一项指标异常建议复诊，其余正常",
+   "expected": "say",
+   "class": "分寸-健康",
+   "round": "R3",
+   "humanReview": null
+  },
+  {
+   "text": "前同事在群里夸你上次帮的忙，顺便提到他公司正在招人",
+   "expected": "say",
+   "class": "分寸-职业",
+   "round": "R3",
+   "humanReview": null
+  },
+  {
+   "text": "你三个月前收藏的一个创业想法，今天看到有人刚开始做且拿到了融资",
+   "expected": null,
+   "class": "分寸-灰色地带⚠",
+   "round": "R3",
+   "humanReview": "首个真灰色样本：说（先发/机会）与默（旧想法）均可辩护"
+  },
+  {
+   "text": "快递放在了你邻居家，邻居不在家，晚上八点才回",
+   "expected": "say",
+   "class": "分寸-知情",
+   "round": "R3",
+   "humanReview": null
+  },
+  {
+   "text": "你订阅的付费服务今晚自动续费，价格比去年涨了 40%",
+   "expected": "say",
+   "class": "分寸-金钱",
+   "round": "R3",
+   "humanReview": null
+  }
+ ]
+}
