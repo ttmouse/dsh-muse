@@ -36,19 +36,20 @@
       "scenario": "E3",
       "next_action": "建立合成通知回放样本及预期标签，先测当前策略；真实价值判断保留人类评价栏。",
       "evidence": [
-        "R-B02: 合成样本 10 条（A6/B1/C3），judge 基线 precision 100% recall 100%（provisional，待真实消息人工标注复核）；评估器 examples/gate/notify-eval.mjs"
+        "R-B02-baseline",
+        "R-B02-round2"
       ]
     },
     {
       "id": "B03",
       "title": "记忆纠正后减少重复解释",
-      "status": "active",
+      "status": "accepted",
       "problem": "记忆存储通过测试，尚不能证明跨轮纠正和项目隔离的真实体感。",
       "hypothesis": "同一组事实纠正与项目切换场景可定位错误召回，并检验用户重复解释是否减少。",
       "scenario": "E4",
       "next_action": "准备两个合成项目的冲突事实，复用现有 memory 测试，再在 scratch profile 验证召回。",
       "evidence": [
-        "R-B03-exp1: 证实纠正与过时记忆共存（记忆污染），修复方向=supersede 语义"
+        "R-B03-exp1"
       ]
     },
     {
@@ -78,11 +79,60 @@
       "candidate": "B00",
       "decision": "accepted",
       "level": "engineering",
+      "summary": "演进合同、状态账本与工程基线建立",
       "evidence": [
         "docs/evolution/rounds/2026-10-05-bootstrap.md"
-      ],
-      "summary": "方向、执行合同、来源索引、场景验收、状态校验与快照入口建立；真实长期体验仍未验证。"
+      ]
     },
-    "R-B02-baseline: 2026-10-05 judge 基线 10/10（合成，provisional），评估器 notify-eval.mjs"
+    {
+      "id": "R-B01-prep",
+      "candidate": "B01",
+      "decision": "inconclusive",
+      "level": "engineering",
+      "summary": "试运行基线准备完成（合成工作目录+计数表），等待真实试运行触发",
+      "evidence": [
+        "docs/evolution/rounds/2026-10-05-b01-prep.md"
+      ]
+    },
+    {
+      "id": "R-B02-baseline",
+      "candidate": "B02",
+      "decision": "inconclusive",
+      "level": "user",
+      "summary": "合成样本 judge 基线 10/10（provisional，待人工标注）",
+      "evidence": [
+        "docs/evolution/rounds/2026-10-05-b02-baseline.md"
+      ]
+    },
+    {
+      "id": "R-B02-round2",
+      "candidate": "B02",
+      "decision": "inconclusive",
+      "level": "user",
+      "summary": "边界模糊样本 5/5 判定可辩护",
+      "evidence": [
+        "docs/evolution/rounds/2026-10-05-b02-round2.md"
+      ]
+    },
+    {
+      "id": "R-B03-exp1",
+      "candidate": "B03",
+      "decision": "accepted",
+      "level": "engineering",
+      "summary": "证实纠正与过时记忆共存（记忆污染）",
+      "evidence": [
+        "docs/evolution/rounds/2026-10-05-b03-exp1.md"
+      ]
+    },
+    {
+      "id": "R-B03-fix",
+      "candidate": "B03",
+      "decision": "accepted",
+      "level": "engineering",
+      "summary": "supersede 语义实现并回归测试通过",
+      "evidence": [
+        "docs/evolution/rounds/2026-10-05-b03-fix.md"
+      ]
+    }
   ]
 }

@@ -46,3 +46,4 @@
 - [2026-10-05 05:30 +08:00] 推进单元（多文档联合阅读）：文档状态同步（jxa/permissionGuide/C4 habits 落地勾选）+ A3 Artifacts 设计定稿（文件即载体路线，三切片）+ AGENTS.md 新增 Artifacts 路由。
 - [2026-10-05 05:40 +08:00] 推进单元：A3 切片 1 实例验证完成——开支仪表盘 Artifacts（壳/数据分离 + build 注入），自包含零外部请求，数据更新演练通过。验收 4/4。
 - [2026-10-05 05:00 +08:00] 推进单元：B3 supersede 语义完成（supersedeEntries + memory_save supersedes 参数），测试对齐并发重构后的 storage.appendMemory；全量 48 测试绿。
+- [2026-10-05 08:02 +08:00] 消息分诊：钉钉@我 0 条 / 微信扫描完成（无私聊未读需跟进），跟进项 0
