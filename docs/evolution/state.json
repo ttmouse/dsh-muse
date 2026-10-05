@@ -3,7 +3,7 @@
   "updated": "2026-10-05",
   "stage": "S0",
   "runtime_note": "账本不是授权或调度；B01 的 E1 任务未触发，24 小时观察窗未满。DSH 主会话的直接人类触发与评价仍待补。",
-  "next": "B04",
+  "next": "B01",
   "candidates": [
     {
       "id": "B00",
@@ -222,6 +222,26 @@
       "summary": "S1 就绪度评估：硬门槛全过，E 覆盖 4/5+2 部分；缺用户反馈与 24h 完整窗口",
       "evidence": [
         "docs/evolution/rounds/2026-10-05-s1-readiness.md"
+      ]
+    },
+    {
+      "id": "R-night-audit",
+      "candidate": "B06",
+      "decision": "inconclusive",
+      "level": "runtime",
+      "summary": "夜班 detached 工作者完成全仓库文档健康审计（56 md，零改动只读）；发现 3 项晨起修复项",
+      "evidence": [
+        "docs/evolution/rounds/2026-10-05-worker-serialization.md"
+      ]
+    },
+    {
+      "id": "R-B01-24h-check",
+      "candidate": "B01",
+      "decision": "inconclusive",
+      "level": "runtime",
+      "summary": "E3 24h 静默/等待观察窗口 10-06 04:00 达成；判定留晨间演进轮",
+      "evidence": [
+        "docs/evolution/trial-counting.md"
       ]
     }
   ]
