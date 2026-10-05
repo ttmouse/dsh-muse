@@ -3,7 +3,7 @@
   "updated": "2026-10-05",
   "stage": "S0",
   "runtime_note": "本轮未在 DSH 创建演进 routine；该账本不是授权或调度。每天 1 轮、先运行 7 轮仅为建议，须由 DSH 直接人类 turn 绑定授权。",
-  "next": "B01",
+  "next": "B06",
   "candidates": [
     {
       "id": "B00",
@@ -72,6 +72,16 @@
       "hypothesis": "只有当前范围无法满足真实需求时，扩展连接才有净收益。",
       "scenario": "E1,E5",
       "next_action": "等待真实需求和相应人类授权后重新评估；不因 Muse 有该功能自动接入。",
+      "evidence": []
+    },
+    {
+      "id": "B06",
+      "title": "主控编排：单对话多目标（工作者会话架构）",
+      "status": "ready",
+      "problem": "用户期望 Muse 式单对话多目标，但 DSH create_goal 单会话单目标；多会话方案违背单一对话核心体验（用户明确否决）",
+      "hypothesis": "用 subagent 可继续子会话作为透明工作者、主控 muse_routine 定时巡检推进、muse-dashboard 聚合可见性，可在不改上游的前提下实现 Muse 核心体验",
+      "scenario": "E1,E3,E5",
+      "next_action": "交付 examples/orchestrator/ 主控编排 playbook：工作者派生/目标合同/巡检推进/汇总汇报约定 + 可运行示例",
       "evidence": []
     }
   ],
