@@ -41,8 +41,11 @@ dsh plugin --profile web add <已发布的包名或 git 地址>   # 两个包都
 - [docs/experience-guide.md](docs/experience-guide.md) — 三种体感的体验指南
 - [docs/proactivity-design.md](docs/proactivity-design.md) — 主动触发设计（事件驱动 + 唤醒/打扰分离）
 - [docs/FAQ.md](docs/FAQ.md) — 常见报错与修复
-- [docs/capability-checklist.md](docs/capability-checklist.md) — 历史能力盘点；当前优先级和证据以演进账本为准
+- [docs/capability-checklist.md](docs/capability-checklist.md) — 27 项 Muse 能力对标清单（每日自动校准）
 - [examples/habits/](examples/habits/) — 跨项目习惯挖掘器（主动想法的输入）
+- [docs/today-app-notes.md](docs/today-app-notes.md) — Today.app 拆解笔记（可学习模式）
+- [docs/heartbeat-recipes.md](docs/heartbeat-recipes.md) — 静默心跳/主动汇报可复现配方
+- [docs/install-notes.md](docs/install-notes.md) — 跨版本安装踩坑记录
 - [docs/gaps.md](docs/gaps.md) — 已实现 vs Muse 尚缺（事件 ingress、记忆 seam、外部通知）
 
 ## 状态
