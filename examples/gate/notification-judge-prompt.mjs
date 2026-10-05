@@ -1,0 +1,2 @@
+/** Shared judge instructions for live gating and the synthetic evaluator. */
+export const NOTIFICATION_JUDGE_PROMPT = 'You are the notification gate of a personal agent. Decide if this message is worth INTERRUPTING the user in their main conversation. Say yes only for: meaningful new progress on their goals, something needing their decision/action, or time-sensitive items. Reject: routine checks, test noise, anything they did not ask to be notified about. Reply ONLY strict JSON: {"worth_saying": boolean, "reason": "<=20 words"}'

@@ -5,6 +5,7 @@
  * Zero real messages; all content synthetic.
  */
 import { llmJson } from '../lib/dsh-client.mjs'
+import { NOTIFICATION_JUDGE_PROMPT } from './notification-judge-prompt.mjs'
 
 // expected: 'say' = 值得打断（时限/需行动/重要进展）；'skip' = 不值得
 const SAMPLES = [
@@ -26,7 +27,7 @@ const results = []
 
 for (const s of SAMPLES) {
   const v = await llmJson(
-    'You are the notification gate of a personal agent. Decide if this message is worth INTERRUPTING the user in their main conversation. Say yes only for: meaningful new progress on their goals, something needing their decision/action, or time-sensitive items. Reject: routine checks, test noise, marketing, anything they did not ask to be notified about. Reply ONLY strict JSON: {"worth_saying": boolean, "reason": "<=20 words"}',
+    NOTIFICATION_JUDGE_PROMPT,
     s.text,
   )
   const saidByJudge = v.worth_saying === true
@@ -56,10 +57,28 @@ const AMBIGUOUS = [
 console.log('\n== round2 边界模糊样本（判定仅供人工复核，不计对错）==')
 for (const s of AMBIGUOUS) {
   const v = await llmJson(
-    'You are the notification gate of a personal agent. Decide if this message is worth INTERRUPTING the user in their main conversation. Say yes only for: meaningful new progress on their goals, something needing their decision/action, or time-sensitive items. Reject: routine checks, test noise, marketing, anything they did not ask to be notified about. Reply ONLY strict JSON: {"worth_saying": boolean, "reason": "<=20 words"}',
+    NOTIFICATION_JUDGE_PROMPT,
     s.text,
   )
   console.log(` [${v.worth_saying ? '说' : '默'}] ${s.text.slice(0, 40)} — ${v.reason}`)
+}
+
+
+// == round3: 分寸感刁钻样本（隐私张力/关系权重/延迟价值；判定供人工复核） ==
+const TRICKY = [
+  { text: '你的体检报告出了，有一项指标异常建议复诊，其余正常' },
+  { text: '前同事在群里夸你上次帮的忙，顺便提到他公司正在招人' },
+  { text: '你三个月前收藏的一个创业想法，今天看到有人刚开始做且拿到了融资' },
+  { text: '快递放在了你邻居家，邻居不在家，晚上八点才回' },
+  { text: '你订阅的付费服务今晚自动续费，价格比去年涨了 40%' },
+]
+console.log('\n== round3 分寸感刁钻样本（判定供人工复核）==')
+for (const s of TRICKY) {
+  const v = await llmJson(
+    'You are the notification gate of a personal agent. Decide if this message is worth INTERRUPTING the user in their main conversation. Say yes only for: meaningful new progress on their goals, something needing their decision/action, or time-sensitive items. Reject: routine checks, test noise, marketing, anything they did not ask to be notified about. Reply ONLY strict JSON: {"worth_saying": boolean, "reason": "<=20 words"}',
+    s.text,
+  )
+  console.log(` [${v.worth_saying ? '说' : '默'}] ${s.text.slice(0, 36)}… — ${v.reason}`)
 }
 
 console.log(`误判明细: ${results.filter(r => !r.ok).map(r => `[${r.class}] ${r.reason}`).join(' ; ') || '无'}`)

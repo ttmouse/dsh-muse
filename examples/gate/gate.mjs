@@ -30,6 +30,7 @@ import { fileURLToPath } from 'node:url'
 import { checkOutbound } from '../lib/outbound-policy.mjs'
 import { pollImap } from './sources/imap.mjs'
 import { pollJxaCalendar } from './sources/jxa-calendar.mjs'
+import { NOTIFICATION_JUDGE_PROMPT } from './notification-judge-prompt.mjs'
 
 const { values: args } = parseArgs({
   args: process.argv.slice(2),
@@ -228,7 +229,7 @@ if (args['dry-run']) { console.log(`gate: would inject: ${message}`); process.ex
 
 async function judgeWorthy(message) {
   const verdict = await llmJson(
-    'You are the notification gate of a personal agent. Decide if this message is worth INTERRUPTING the user in their main conversation. Say yes only for: meaningful new progress on their goals, something needing their decision/action, or time-sensitive items. Reject: routine checks, test noise, anything they did not ask to be notified about.',
+    NOTIFICATION_JUDGE_PROMPT,
     message,
     args['judge-model'],
   )

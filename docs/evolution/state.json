@@ -3,7 +3,7 @@
   "updated": "2026-10-05",
   "stage": "S0",
   "runtime_note": "账本不是授权或调度；B01 的 E1 任务未触发，24 小时观察窗未满。DSH 主会话的直接人类触发与评价仍待补。",
-  "next": "B06",
+  "next": "B04",
   "candidates": [
     {
       "id": "B00",
@@ -33,14 +33,15 @@
     {
       "id": "B02",
       "title": "通知分寸的成对评估",
-      "status": "ready",
+      "status": "waiting",
       "problem": "安静不代表有效：漏报、重复阻塞通知还没有可比较的体验基线。",
       "hypothesis": "用包含重要变化和重复噪声的标注样本回放，可以同时测误报与漏报，再决定是否修改判断门。",
       "scenario": "E3",
-      "next_action": "建立合成通知回放样本及预期标签，先测当前策略；真实价值判断保留人类评价栏。",
+      "next_action": "等待独立人工标注，重点确认例会开始前 30 分钟是否应打断；不据实现者自设标签调整 prompt。真实通知基线与用户评价仍 unknown。",
       "evidence": [
         "R-B02-baseline",
-        "R-B02-round2"
+        "R-B02-round2",
+        "R-B02-prompt-parity"
       ]
     },
     {
@@ -78,11 +79,11 @@
     {
       "id": "B06",
       "title": "主控编排：单对话多目标（工作者会话架构）",
-      "status": "active",
+      "status": "waiting",
       "problem": "用户期望 Muse 式单对话多目标，但 DSH create_goal 单会话单目标；多会话方案违背单一对话核心体验（用户明确否决）",
-      "hypothesis": "用 subagent 可继续子会话作为透明工作者、主控 muse_routine 定时巡检推进、muse-dashboard 聚合可见性，可在不改上游的前提下实现 Muse 核心体验",
+      "hypothesis": "若 DSH 提供保留消息来源身份且可强制限制工具/文件范围的 worker 入口，则主会话可汇总多个有界工作单元而不扩张自治授权",
       "scenario": "E1,E3,E5",
-      "next_action": "验证 examples/orchestrator/ 的主控合同和只读可运行示例；标清routine授权边界，真实多目标体验仍需DSH主会话实跑。",
+      "next_action": "解除条件：验证一个保留消息来源身份、且工具与文件范围可强制限制的 DSH worker 派发入口；或由用户在 DSH 主会话直接授权端到端试运行。不得用 session/prompt 或 Codex 授权替代。",
       "evidence": [
         "R-B06-orchestrator"
       ]
@@ -174,9 +175,19 @@
       "candidate": "B06",
       "decision": "inconclusive",
       "level": "engineering",
-      "summary": "计划交付单会话多目标编排 playbook 与无副作用示例；真人授权和真实 worker/routine 运行不在本轮 Codex 主会话内模拟",
+      "summary": "交付 playbook 与只读示例；detached host 证明进程可并行，但 session/prompt 派发违反来源边界，已降为 prepare-only；安全 worker 派发与真实体验仍未证实",
       "evidence": [
         "docs/evolution/rounds/2026-10-05-b06-orchestrator.md"
+      ]
+    },
+    {
+      "id": "R-B02-prompt-parity",
+      "candidate": "B02",
+      "decision": "inconclusive",
+      "level": "engineering",
+      "summary": "统一运行时与评估器 prompt 后复测 15 条纯合成输入：precision 100%（5/5）、recall 83%（5/6）、重复 0；例会提醒标签待独立人工确认",
+      "evidence": [
+        "docs/evolution/rounds/2026-10-05-b02-prompt-parity.md"
       ]
     }
   ]
