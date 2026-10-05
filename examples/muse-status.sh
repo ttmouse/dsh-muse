@@ -23,4 +23,18 @@ log_metadata "reflect" "$project_dir/examples/reflect/reflect-decisions.log"
 echo "== 记忆文件 =="; wc -l ~/.dsh/memories/main.md 2>/dev/null || echo "  (尚无记忆)"
 echo "== 当前会话工作预算 =="
 echo "  在 DSH 主会话调用 muse_status 查看当前 goal 与 routine 状态（只读）"
+echo "== Muse 身份 =="
+if [ -f "$HOME/.dsh/muse/identity.json" ]; then
+  python3 -c "
+import json
+d = json.load(open('$HOME/.dsh/muse/identity.json'))
+name = d.get('name') or '（未命名——编辑 ~/.dsh/muse/identity.json 给你的 Muse 起名）'
+print(' ', name)
+tag = d.get('tagline'); style = d.get('style')
+if tag: print('  ', tag)
+if style: print('  风格:', style)
+"
+else
+  echo "  （无 identity.json）"
+fi
 echo "== 待处理信号 =="; [[ -f "$project_dir/MUSE-SIGNAL.md" ]] && echo "  有信号文件" || echo "  (无)"
