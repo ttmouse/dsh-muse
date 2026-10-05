@@ -9,7 +9,14 @@ let ideas = []
 try { ideas = (JSON.parse(readFileSync(join(dshHome, 'muse', 'ideas.json'), 'utf8')).ideas ?? []).slice(0, 10) } catch {}
 const memory = read(join(dshHome, 'memories', 'main.md'))
 const memLines = memory.split('\n').filter(l => l.startsWith('- ')).length
-const memOk = (memory.match(/# Muse memory/g) ?? []).length === 1
+const headerCount = (memory.match(/# Muse memory/g) ?? []).length
+const memOk = headerCount === 1
+// 异常指标（A3 slice-3）：供仪表盘标记与主动提醒
+const lastPatrolAgeHours = runs.length > 0 ? (Date.now() - Date.parse(runs[0].at)) / 3600e3 : null
+const anomalies = []
+if (!memOk) anomalies.push('记忆文件头部重复（自愈未生效，需人工检查）')
+if (lastPatrolAgeHours !== null && lastPatrolAgeHours > 1) anomalies.push(`巡逻停滞：最后一次记录已是 ${lastPatrolAgeHours.toFixed(1)} 小时前`)
+if (lastPatrolAgeHours === null) anomalies.push('尚无巡逻记录（launchd 未运行或统计刚启用）')
 const last = runs[0]
 const html = `<!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -25,6 +32,7 @@ table{width:100%;border-collapse:collapse;font-size:.85rem}td{padding:3px 6px;bo
 <div class="card"><div class="num ${memOk ? 'ok' : 'warn'}">${memOk ? '健康' : '需修复'}</div><div class="muted">记忆文件（${memLines} 条）</div></div>
 <div class="card"><div class="num">${ideas.length}</div><div class="muted">待回顾想法</div></div>
 </div>
+${anomalies.length > 0 ? `<div class="warn card"><strong>⚠ 异常（${anomalies.length}）</strong><div>${anomalies.map(a => `• ${a}`).join('<br>')}</div></div>` : '<div class="ok" style="margin:8px 0">✓ 无异常</div>'}
 <h2>最近巡逻</h2>
 <table><tr><th>时间(UTC)</th><th>信号数</th></tr>
 ${runs.map(r => `<tr><td>${r.at.slice(0, 19).replace('T', ' ')}</td><td>${r.hits}</td></tr>`).join('') || '<tr><td colspan="2" class="muted">暂无</td></tr>'}
