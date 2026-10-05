@@ -7,7 +7,6 @@ lib/
 examples/gate/local-config.env
 examples/gate/local-rules.json
 examples/gate/gate-decisions.log
-examples/gate/local-rules.example.json
 examples/gate/.gate-state/
 examples/reflect/reflect-decisions.log
 demo-journal.md

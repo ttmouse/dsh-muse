@@ -1,0 +1,15 @@
+[
+ {
+  "type": "imap",
+  "host": "imap.gmail.com",
+  "port": 993,
+  "user": "you@gmail.com",
+  "passwordRef": "MUSE_IMAP_PASSWORD",
+  "permissionGuide": "Gmail 授权引导：Google 账号 → 安全 → 两步验证 → 应用专用密码，生成后存入 ~/.dsh/.credentials.yaml 的 MUSE_IMAP_PASSWORD 键"
+ },
+ {
+  "type": "jxa-calendar",
+  "hoursAhead": 12,
+  "permissionGuide": "日历授权引导：系统设置 → 隐私与安全性 → 日历，允许本程序访问"
+ }
+]
