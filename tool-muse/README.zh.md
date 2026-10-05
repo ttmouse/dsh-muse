@@ -26,7 +26,7 @@
 
 #### 模型看到什么
 
-`muse_autonomy` 的工具 schema 与描述，见生成的[工具目录](../../../docs/tool-catalog.md)；本页不记录差异。工具结果是紧凑 JSON `{"autonomy":boolean}`。
+`muse_autonomy` 的工具 schema 与描述，见生成的[工具目录](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/tool-catalog.md)；本页不记录差异。工具结果是紧凑 JSON `{"autonomy":boolean}`。
 
 #### Token 效应
 

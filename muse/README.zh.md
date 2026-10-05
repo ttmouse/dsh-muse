@@ -4,7 +4,7 @@
 
 Muse 自治保持器：为单个会话提供持久化的自治决策，并在重启与复会后自动重新武装（re-arm）其目标推进。
 
-挂载本插件会改变 goal 子系统的有意默认——activation 从不跨进程边界继承（见 [goal-round-driver](../../goal/goal-round-driver/README.md)）。启用 Muse 后，会话日志中携带一条持久的 `muse/intent` 记录，表明用户希望持续主动地推进目标；插件把这条记录视为常设的人类授权，在会话重新变为 live 时重新武装当前 active 的目标。本插件不拥有自己的 driver：`dsh-goal-round-driver` 仍按原样推进已武装的目标。
+挂载本插件会改变 goal 子系统的有意默认——activation 从不跨进程边界继承（见 [goal-round-driver](https://github.com/deepseek-ai/deepseek-harness/tree/master/packages/goal/goal-round-driver)）。启用 Muse 后，会话日志中携带一条持久的 `muse/intent` 记录，表明用户希望持续主动地推进目标；插件把这条记录视为常设的人类授权，在会话重新变为 live 时重新武装当前 active 的目标。本插件不拥有自己的 driver：`dsh-goal-round-driver` 仍按原样推进已武装的目标。
 
 ## 组合
 
