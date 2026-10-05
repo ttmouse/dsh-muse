@@ -47,11 +47,9 @@ try {
     case 'spawn':
       runNode(join(here, 'orchestrator', 'spawn-worker.mjs'), rest)
       break
-    case 'maintenance': {
-      const days = rest[0] ?? '30'
-      runNode(join(here, 'memory-maintenance.mjs'), ['--days', days])
+    case 'maintenance':
+      runNode(join(here, 'memory-maintenance.mjs'), rest.length ? rest : ['--days', '30'])
       break
-    }
     case 'ideas':
       runNode(join(root, 'artifacts', 'ideas', 'build.mjs'))
       break
