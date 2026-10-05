@@ -48,6 +48,9 @@ try {
     case 'spawn':
       runNode(join(here, 'orchestrator', 'spawn-worker.mjs'), rest)
       break
+    case 'wx-triage':
+      runNode(join(here, 'wechat-deep-triage.mjs'), rest)
+      break
     case 'maintenance':
       runNode(join(here, 'memory-maintenance.mjs'), rest.length ? rest : ['--days', '30'])
       break
