@@ -116,3 +116,4 @@
 - [2026-10-05T11:29:13.975Z] reflection deferred: reliable session history unavailable
 - [2026-10-05T11:31:14.165Z] reflection deferred: reliable session history unavailable
 - [2026-10-05T11:33:14.334Z] reflection deferred: reliable session history unavailable
+- [2026-10-05T12:41:50.464Z] reflection: memory_added=0; idea=none; plan=gate 端到端注入测试，无需新增记忆
