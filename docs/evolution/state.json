@@ -198,7 +198,7 @@
       "candidate": "B04",
       "decision": "inconclusive",
       "level": "engineering",
-      "summary": "实现 session-only 只读 muse_status 并移除状态脚本中的原始日志输出；构建通过，tool-muse 10/10、真实 AgentLoop 集成及 Muse 测试 30/30；scratch 桌面交互与用户可解释性仍待验证",
+      "summary": "实现 session-only 只读 muse_status 与中文可读结果；构建通过，tool-muse 10/10、真实 AgentLoop 空/有状态集成及 Muse 测试 31/31；看板桌面/移动布局与筛选通过，scratch DSH 交互及用户评价仍待验证",
       "evidence": [
         "docs/evolution/rounds/2026-10-05-b04-status-tool.md"
       ]
