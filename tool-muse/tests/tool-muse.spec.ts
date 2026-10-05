@@ -157,6 +157,70 @@ describe('muse_autonomy tool', () => {
     expect(loader.unwrapExports(toolMuse)).toBe(toolMuse)
   })
 
+  it('summarizes only the current session goal and routine budgets without exposing prompts', async () => {
+    const { ctx, root } = await harness()
+    const disposeGoals = ctx.provide('goals', {
+      get: (agent: Agent) => agent === root.agent ? {
+        objective: 'Finish the bounded report', phase: 'blocked', activation: 'disarmed',
+        roundsStarted: 2, maxGoalRounds: 5, blockedReason: { message: 'Waiting on input' },
+      } : undefined,
+    } as never)
+    const disposeRoutines = ctx.provide('museRoutines', {
+      list: (agent: Agent) => agent === root.agent ? [{
+        id: 'routine-1', title: 'Review report', prompt: 'private prompt text', enabled: true,
+        everySeconds: 3600, nextRunAt: 1_800_000_000_000, runs: 3, maxRuns: 7,
+        lastResult: { deliveryId: 'delivery-1', status: 'waiting', summary: 'Source file missing', nextStep: 'Check after source arrives', recordedAt: 1 },
+      }] : [],
+    } as never)
+    openTurn(root, { kind: 'plugin', plugin: 'status-test' })
+
+    const result = await ctx.agents.withInitiator(root.agent, () => ctx.tools.execute({
+      signal: testToolSignal,
+      callId: ToolCallId('status-summary'),
+      name: 'muse_status',
+      arguments: {},
+      agent: root.agent,
+    }))
+    disposeRoutines()
+    disposeGoals()
+
+    expect(result.isError).toBe(false)
+    if (result.isError) throw new Error('expected read-only status result')
+    expect(result.value).toEqual({
+      goal: {
+        available: true, objective: 'Finish the bounded report', phase: 'blocked', activation: 'disarmed',
+        roundsStarted: 2, maxGoalRounds: 5, roundsRemaining: 3, blockedReason: 'Waiting on input',
+      },
+      routines: [{
+        id: 'routine-1', title: 'Review report', enabled: true, state: 'waiting', everySeconds: 3600,
+        nextRunAt: 1_800_000_000_000, runs: 3, maxRuns: 7, runsRemaining: 4,
+        lastSummary: 'Source file missing', nextStep: 'Check after source arrives',
+      }],
+    })
+  })
+
+  it('returns an explicit empty snapshot when the session has no goal or routine service', async () => {
+    const { ctx, root } = await harness()
+    openTurn(root, { kind: 'plugin', plugin: 'status-test' })
+    const result = await ctx.agents.withInitiator(root.agent, () => ctx.tools.execute({
+      signal: testToolSignal,
+      callId: ToolCallId('empty-status-summary'),
+      name: 'muse_status',
+      arguments: {},
+      agent: root.agent,
+    }))
+
+    expect(result.isError).toBe(false)
+    if (result.isError) throw new Error('expected empty read-only status result')
+    expect(result.value).toEqual({
+      goal: {
+        available: false, objective: '', phase: 'none', activation: 'none',
+        roundsStarted: 0, maxGoalRounds: 0, roundsRemaining: 0, blockedReason: '',
+      },
+      routines: [],
+    })
+  })
+
   it('records a durable latest-wins intent under direct human authority', async () => {
     const { ctx, root } = await harness()
     openTurn(root, { kind: 'user' }, 'keep pushing this until done')

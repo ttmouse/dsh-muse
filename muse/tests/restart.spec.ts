@@ -94,6 +94,73 @@ async function waitForRounds(ctx: Context, sessionId: SessionId, rounds: number)
 }
 
 describe('Muse autonomy across a real process restart', () => {
+  it('renders an empty status plainly through the real AgentLoop tool result', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'dsh-muse-status-empty-'))
+    roots.push(root)
+    const sessionId = SessionId('muse-status-empty-proof')
+    const ctx = await mount(root, new ScriptedAdapter([
+      toolCall('muse_status', 'call_empty_status_read', '{}'),
+      text('EMPTY STATUS VERIFIED'),
+    ]))
+    const created = await ctx.agents.create({
+      sessionId,
+      agentOptions: { provider: 'mock', model: 'mock' },
+    })
+    created.agent.followup(createUserMessage({
+      content: [{ type: 'text', text: 'Show this session\'s current goal and routine status.' }],
+      source: { kind: 'user' },
+    }))
+    await created.agent.whenIdle()
+
+    const result = created.agent.session.snapshotEvents().find(event =>
+      event.type === 'tool/result' && event.data.message.toolCallId === 'call_empty_status_read')
+    expect(result?.type).toBe('tool/result')
+    if (result?.type !== 'tool/result') throw new Error('muse_status result was not recorded')
+    expect(result.data.message.content).toEqual([{
+      type: 'text', text: '当前会话状态\n目标：无\n定时任务：无',
+    }])
+  })
+
+  it('serves current goal and routine state through the real AgentLoop tool chain', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'dsh-muse-status-runtime-'))
+    roots.push(root)
+    const sessionId = SessionId('muse-status-runtime-proof')
+    const adapter = new ScriptedAdapter([
+      toolCall('muse_autonomy', 'call_status_grant', '{"autonomy":true}'),
+      toolCall('create_goal', 'call_status_goal', '{"objective":"Verify status integration","max_goal_rounds":4}'),
+      toolCall('muse_routine', 'call_status_routine', '{"operation":"create","title":"Status fixture","prompt":"Private fixture prompt","every_seconds":600,"max_runs":3}'),
+      toolCall('muse_status', 'call_status_read', '{}'),
+      toolCall('muse_autonomy', 'call_status_revoke', '{"autonomy":false}'),
+      text('STATUS INTEGRATION VERIFIED'),
+    ])
+    const ctx = await mount(root, adapter)
+    const created = await ctx.agents.create({
+      sessionId,
+      agentOptions: { provider: 'mock', model: 'mock' },
+    })
+    created.agent.followup(createUserMessage({
+      content: [{ type: 'text', text: 'Create temporary bounded goal and routine fixtures, then report their status.' }],
+      source: { kind: 'user' },
+    }))
+    await created.agent.whenIdle()
+
+    const statusResult = created.agent.session.snapshotEvents().find(event =>
+      event.type === 'tool/result' && event.data.message.toolCallId === 'call_status_read')
+    expect(statusResult?.type).toBe('tool/result')
+    if (statusResult?.type !== 'tool/result') throw new Error('muse_status result was not recorded')
+    const statusText = statusResult.data.message.content.find(part => part.type === 'text')?.text
+    if (statusText === undefined) throw new Error('muse_status did not return its readable snapshot')
+    expect(statusText).toContain('目标：Verify status integration')
+    expect(statusText).toContain('阶段：active · 自治：armed')
+    expect(statusText).toContain('进度：0/4 轮，剩余 4 轮')
+    expect(statusText).toContain('定时任务：Status fixture')
+    expect(statusText).toContain('状态：已排期')
+    expect(statusText).toContain('次数：0/3，剩余 3 次')
+    expect(statusText).toMatch(/下次运行：\d{4}-\d\d-\d\d \d\d:\d\d:\d\d UTC/)
+    expect(statusText).not.toContain('Private fixture prompt')
+    expect(agentAutonomy(created.agent)).toBe(false)
+  })
+
   it('cold-wakes a due routine after process restart with human proof and a non-human source', async () => {
     const root = await mkdtemp(join(tmpdir(), 'dsh-muse-timer-restart-'))
     roots.push(root)

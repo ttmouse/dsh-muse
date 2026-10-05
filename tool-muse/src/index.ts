@@ -113,6 +113,45 @@ interface MuseStatusValue {
   }[]
 }
 
+/** Render the durable status snapshot so the generic Web Client card is useful when expanded. */
+function renderMuseStatus(value: MuseStatusValue): string {
+  const lines = ['当前会话状态']
+  if (!value.goal.available) {
+    lines.push('目标：无')
+  } else {
+    lines.push(
+      `目标：${value.goal.objective}`,
+      `阶段：${value.goal.phase} · 自治：${value.goal.activation}`,
+      `进度：${value.goal.roundsStarted}/${value.goal.maxGoalRounds} 轮，剩余 ${value.goal.roundsRemaining} 轮`,
+    )
+    if (value.goal.blockedReason !== '') lines.push(`阻塞原因：${value.goal.blockedReason}`)
+  }
+
+  if (value.routines.length === 0) {
+    lines.push('定时任务：无')
+  } else {
+    const stateLabels: Record<string, string> = {
+      scheduled: '已排期', waiting: '等待', paused: '已暂停',
+      completed: '已完成', 'budget-exhausted': '预算耗尽',
+    }
+    for (const routine of value.routines) {
+      const date = new Date(routine.nextRunAt)
+      const nextRun = Number.isNaN(date.getTime())
+        ? '未知'
+        : date.toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ' UTC')
+      lines.push(
+        `定时任务：${routine.title}`,
+        `状态：${stateLabels[routine.state] ?? routine.state}`,
+        `次数：${routine.runs}/${routine.maxRuns}，剩余 ${routine.runsRemaining} 次`,
+        `下次运行：${nextRun}`,
+      )
+      if (routine.lastSummary !== '') lines.push(`最近结果：${routine.lastSummary}`)
+      if (routine.nextStep !== '') lines.push(`下一步：${routine.nextStep}`)
+    }
+  }
+  return lines.join('\n')
+}
+
 const MUSE_VALUE_SCHEMA = {
   type: 'object',
   additionalProperties: false,
@@ -202,7 +241,7 @@ export function apply(ctx: Context): void {
           },
         },
       },
-      render: (_args: unknown, value: MuseStatusValue) => [{ type: 'text' as const, text: JSON.stringify(value) }],
+      render: (_args: unknown, value: MuseStatusValue) => [{ type: 'text' as const, text: renderMuseStatus(value) }],
     },
     execute(_args, exec) {
       const { agent } = museToolExecution(ctx, exec)

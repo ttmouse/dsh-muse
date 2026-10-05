@@ -141,6 +141,13 @@
    "class": "分寸-金钱",
    "round": "R3",
    "humanReview": null
+  },
+  {
+   "text": "日历事件：例行周会 30 分钟后开始（30 分钟内开始的日历事件默认 worth）",
+   "expected": "say",
+   "class": "A 时限-回归",
+   "round": "R4",
+   "humanReview": "R-B02-r4 发现的漏报转回归用例"
   }
  ]
 }

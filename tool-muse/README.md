@@ -45,4 +45,6 @@ Append-only: tool schemas are part of the stable prompt prefix; each call's resu
 
 `muse_routine` creates/lists/pauses/resumes bounded work in the current session. Management requires the same direct-human authority; creating also requires standing autonomy. `muse_routine_result` records the current timed unit outcome (`progress`, `waiting`, `done`) and next step. It cannot grant work or extend budgets. See [usage and boundaries](../docs/timer-first.md).
 
+`muse_status` is a read-only snapshot of the current session's goal phase, activation, remaining rounds, blocked reason, and routine state/budget/next run/result. Its persisted result is formatted as a short Chinese status block for the generic Web Client tool card; the structured value remains available to tool consumers. It does not expose routine prompts or read another session. Live DSH interaction and user acceptance remain unverified.
+
 Ideas are delivered with `source.kind=muse` and `trigger=idea`; tool calls on an idea-only turn are denied before execution.

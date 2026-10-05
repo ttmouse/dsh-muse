@@ -7,8 +7,14 @@
 import { llmJson } from '../lib/dsh-client.mjs'
 import { NOTIFICATION_JUDGE_PROMPT } from './notification-judge-prompt.mjs'
 
-// expected: 'say' = 值得打断（时限/需行动/重要进展）；'skip' = 不值得
-const SAMPLES = [
+// 语料库：notify-corpus.json（持久回归资产）。labeled 跑对错，unlabeled 只跑判定供人工复核。
+import { readFileSync } from 'node:fs'
+const corpus = JSON.parse(readFileSync(new URL('./notify-corpus.json', import.meta.url), 'utf8'))
+const SAMPLES = corpus.samples
+const expectedOf = s => s.expected
+
+// 旧内联样本（历史保留，语料库未覆盖时使用）
+const LEGACY = [
   { text: '云服务账单将于明天到期，需确认续费方式', expected: 'say', class: 'A 时限' },
   { text: '客户王总询问项目进度，希望今天得到回复', expected: 'say', class: 'A 需回复' },
   { text: 'GitHub 仓库有 3 个新 star', expected: 'skip', class: 'C 噪声' },
@@ -20,12 +26,17 @@ const SAMPLES = [
   { text: '系统已完成例行备份', expected: 'skip', class: 'C 常态' },
   { text: '合作方提议将下周会议改到周四下午三点', expected: 'say', class: 'A 需决策' },
 ]
+const SAMPLES_ALL = [
+  ...SAMPLES.filter(s => s.expected !== null).map(s => ({ ...s })),
+  ...LEGACY,
+]
 
-let said = 0, saidCorrect = 0, knownImportant = SAMPLES.filter(s => s.expected === 'say').length
-let notifiedImportant = 0, duplicates = 0
 const results = []
+let said = 0, saidCorrect = 0, knownImportant = 0, notifiedImportant = 0, duplicates = 0
+const unlabeled = []
 
-for (const s of SAMPLES) {
+for (const s of SAMPLES_ALL) {
+  if (s.expected === null) { unlabeled.push(s); continue }
   const v = await llmJson(
     NOTIFICATION_JUDGE_PROMPT,
     s.text,
@@ -38,6 +49,9 @@ for (const s of SAMPLES) {
   results.push({ class: s.class, expected: s.expected, judged: saidByJudge ? 'say' : 'skip', reason: v.reason, ok: (saidByJudge ? 'say' : 'skip') === s.expected })
 }
 
+said = results.filter(r => r.judged === 'say').length
+saidCorrect = results.filter(r => r.judged === 'say' && r.expected === 'say').length
+knownImportant = results.filter(r => r.expected === 'say').length
 const precision = said === 0 ? null : notifiedImportant / said
 const recall = knownImportant === 0 ? null : notifiedImportant / knownImportant
 console.log('== B02 通知判断基线（provisional，未经人工标注复核）==')
@@ -46,39 +60,11 @@ console.log(`precision: ${precision === null ? 'N/A' : (precision * 100).toFixed
 console.log(`recall:    ${recall === null ? 'N/A' : (recall * 100).toFixed(0) + '%'} (${notifiedImportant}/${knownImportant})`)
 console.log(`重复通知: ${duplicates}（要求 0）`)
 
-// == round2: 边界模糊样本（无标准答案，测判断门的真实分辨率；人工复核栏留空） ==
-const AMBIGUOUS = [
-  { text: '你上周说想学的 Rust，今天有个入门工作坊开放报名（本周日）' },
-  { text: '微博上有人转发你三年前的项目并 @了你，语气中性' },
-  { text: '你的域名还有 45 天到期' },
-  { text: '住在同小区的邻居问你要不要拼单买水果' },
-  { text: '你常去的健身房这个月有老会员半价续费' },
-]
-console.log('\n== round2 边界模糊样本（判定仅供人工复核，不计对错）==')
-for (const s of AMBIGUOUS) {
-  const v = await llmJson(
-    NOTIFICATION_JUDGE_PROMPT,
-    s.text,
-  )
-  console.log(` [${v.worth_saying ? '说' : '默'}] ${s.text.slice(0, 40)} — ${v.reason}`)
-}
-
-
-// == round3: 分寸感刁钻样本（隐私张力/关系权重/延迟价值；判定供人工复核） ==
-const TRICKY = [
-  { text: '你的体检报告出了，有一项指标异常建议复诊，其余正常' },
-  { text: '前同事在群里夸你上次帮的忙，顺便提到他公司正在招人' },
-  { text: '你三个月前收藏的一个创业想法，今天看到有人刚开始做且拿到了融资' },
-  { text: '快递放在了你邻居家，邻居不在家，晚上八点才回' },
-  { text: '你订阅的付费服务今晚自动续费，价格比去年涨了 40%' },
-]
-console.log('\n== round3 分寸感刁钻样本（判定供人工复核）==')
-for (const s of TRICKY) {
-  const v = await llmJson(
-    'You are the notification gate of a personal agent. Decide if this message is worth INTERRUPTING the user in their main conversation. Say yes only for: meaningful new progress on their goals, something needing their decision/action, or time-sensitive items. Reject: routine checks, test noise, marketing, anything they did not ask to be notified about. Reply ONLY strict JSON: {"worth_saying": boolean, "reason": "<=20 words"}',
-    s.text,
-  )
-  console.log(` [${v.worth_saying ? '说' : '默'}] ${s.text.slice(0, 36)}… — ${v.reason}`)
+// == unlabeled 语料样本（round2/round3 已入语料库；判定仅供人工复核） ==
+console.log('\n== unlabeled 语料样本（判定仅供人工复核，不计对错）==')
+for (const s of unlabeled) {
+  const j = judged.find(x => x.class === s.class)
+  console.log(` [${j?.judged ?? '?'}] [${s.class}] ${s.text.slice(0, 40)}`)
 }
 
 console.log(`误判明细: ${results.filter(r => !r.ok).map(r => `[${r.class}] ${r.reason}`).join(' ; ') || '无'}`)
