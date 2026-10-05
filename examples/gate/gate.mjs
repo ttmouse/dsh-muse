@@ -158,6 +158,19 @@ if (existsSync(signalPath)) {
   const first = text.split('\n').map(l => l.trim()).find(l => l && !l.startsWith('#')) ?? 'Signal'
   hits.push({ message: first, consume: signalPath })
 }
+// ---- A3 slice-3 + B04: patrol stats — feed the system health dashboard ----
+try {
+  const statsDir = join(process.env.DSH_HOME ?? join(homedir(), '.dsh'), 'muse')
+  mkdirSync(statsDir, { recursive: true })
+  const statsPath = join(statsDir, 'patrol-stats.json')
+  let stats = { runs: [] }
+  try { stats = JSON.parse(readFileSync(statsPath, 'utf8')) } catch {}
+  if (!Array.isArray(stats.runs)) stats.runs = []
+  stats.runs.unshift({ at: new Date().toISOString(), hits: hits.length, dryRun: args['dry-run'] === true })
+  stats.runs = stats.runs.slice(0, 500)
+  writeFileSync(statsPath, JSON.stringify(stats, null, 1), { mode: 0o600 })
+} catch (error) { console.error(`patrol-stats skipped: ${String(error).slice(0, 120)}`) }
+
 // ---- A3 slice-2: keep artifacts fresh — rebuild views when their data changed ----
 try {
   const dshHome = process.env.DSH_HOME ?? join(homedir(), '.dsh')
@@ -167,6 +180,12 @@ try {
   if (existsSync(ideasSrc) && (!existsSync(ideasHtml) || statSync(ideasSrc).mtimeMs > statSync(ideasHtml).mtimeMs)) {
     const { execFileSync } = await import('node:child_process')
     execFileSync(process.execPath, [ideasBuild], { timeout: 15000, env: { ...process.env, DSH_HOME: dshHome } })
+    const dashBuild = join(scriptRoot, 'examples', 'muse-dashboard', 'build.mjs')
+    const statsSrc = join(dshHome, 'muse', 'patrol-stats.json')
+    const dashHtml = join(scriptRoot, 'examples', 'muse-dashboard', 'muse-dashboard.html')
+    if (!existsSync(dashHtml) || (existsSync(statsSrc) && statSync(statsSrc).mtimeMs > statSync(dashHtml).mtimeMs)) {
+      execFileSync(process.execPath, [dashBuild], { timeout: 15000, env: { ...process.env, DSH_HOME: dshHome } })
+    }
   }
 } catch (error) { console.error(`artifacts refresh skipped: ${String(error).slice(0, 120)}`) }
 
