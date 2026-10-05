@@ -58,6 +58,19 @@ for (const rule of rules) {
   if (rule.type === 'file-exists' && existsSync(rule.path)) hits.push({ message: rule.message ?? `Signal: ${rule.path}`, consume: rule.path })
 }
 // ---- P5: deterministic sensitive-content filter (pre-check layer; never reaches the agent) ----
+// F5: prompt-injection screening — untrusted signal content that attempts to
+// manipulate the agent never reaches the judge LLM (deterministic pre-filter)
+const INJECTION_PATTERNS = [
+  /ignore\s+(all\s+)?(previous|prior|above)\s+(instructions|prompts|rules)/i,
+  /忽略[^\n。]*(指令|规则|设定)/i,
+  /disregard\s+(all\s+)?(previous|your)\s+(instructions|rules)/i,
+  /you\s+are\s+now\s+(a|an|no longer)/i,
+  /system\s+prompt(\s|$|:)/i,
+  /(reveal|print|show)\s+(your|the)\s+(system\s+prompt|instructions|api\s*key)/i,
+  /(导出|泄露|告诉我)\s*(你的)?\s*(系统提示|密钥|凭证)/i,
+]
+function isInjectionAttempt(text) { return INJECTION_PATTERNS.some(p => p.test(text)) }
+
 const SENSITIVE_PATTERNS = [
   /验证码|verification code|one[- ]time code/i,
   /password reset|重置密码|reset your password/i,
@@ -153,6 +166,14 @@ if (hits.length === 0) process.exit(0) // ← the whole point: silence, zero tra
 const safeHits = hits.filter(hit => !isSensitive(hit.message))
 if (safeHits.length === 0) process.exit(0)
 const message = safeHits.map(h => h.message).join('\n')
+
+// ---- F5 pre-LLM injection screening (untrusted content never reaches the judge) ----
+if (isInjectionAttempt(message)) {
+  logDecision('F5 blocked: prompt-injection pattern in signal — content withheld from LLM, skipped')
+  for (const h of hits) { try { unlinkSync(h.consume) } catch {} }
+  console.log('gate: blocked by F5 (prompt-injection pattern)')
+  process.exit(0)
+}
 
 // ---- F3.1 pre-LLM credential gate (unconditional, before judge and before any log) ----
 const exfil = checkOutbound({ channel: 'session-inject', payload: message })
