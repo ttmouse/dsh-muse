@@ -2,7 +2,9 @@
 
 [English](README.md) | 中文
 
-模型面向的 `muse_autonomy` 工具：在 direct-human 权限下记录会话的持久自治决策（`muse/intent`）。它是 [`dsh-muse`](../muse/README.md) 的 intent 生产者；keeper 消费该决策并在重启后重新武装目标推进。
+模型侧 `muse_autonomy` 工具：在直接人类权威下记录一条绑定人类消息的持久自治决定（owner-only 授权文件，侧车存储）。它是 [`dsh-muse`](../muse/README.md) 的意图生产者；keeper 消费该决定并跨重启恢复目标推进。
+
+本包同时提供 `muse_routine`（有预算的定时工作单元）与 `muse_status`（只读状态快照），见下文「定时与状态工具」。
 
 ## 组合
 
@@ -16,9 +18,9 @@
 
 ## 工具：`muse_autonomy`
 
-以请求的 `autonomy` 布尔值记录一条持久 `muse/intent` 事件并返回 `{ autonomy }`。Latest-wins：再次记录即替换常设决策。
+记录一份 owner-only 持久授权文件，绑定当前人类消息、携带请求的 `autonomy` 布尔值，返回 `{ autonomy }`。最新 wins：再次记录即替换常设决定。
 
-权限镜像 `dsh-tool-goal` 的纪律：调用必须来自活跃 driver 内的确切 live agent、运行时根 agent，且当前轮次内有宿主认证的直接人类消息。自动续跑、子代理与插件来源会被响亮拒绝——只有人类能授予或撤销常设自治。
+权威镜像 `dsh-tool-goal` 的纪律：调用必须来自活跃 driver 内的确切 live agent、运行时根 agent，且当前轮次内有宿主认证的直接人类消息。自动续跑、子代理与插件来源会被响亮拒绝——只有人类能授予或撤销常设自治。
 
 ## Model Experience
 
