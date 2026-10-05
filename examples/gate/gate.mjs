@@ -159,6 +159,20 @@ if (existsSync(signalPath)) {
   const first = text.split('\n').map(l => l.trim()).find(l => l && !l.startsWith('#')) ?? 'Signal'
   hits.push({ message: first, consume: signalPath })
 }
+// ---- watchdog: detect patrol gaps (self-monitoring, catches launchd loss) ----
+try {
+  const gapStatePath = join(scriptRoot, '.gate-state', 'last-patrol.json')
+  mkdirSync(dirname(gapStatePath), { recursive: true })
+  const nowMs = Date.now()
+  let last = { at: nowMs }
+  try { last = JSON.parse(readFileSync(gapStatePath, 'utf8')) } catch {}
+  const gapMin = (nowMs - (last.at ?? nowMs)) / 60000
+  if (gapMin > 30) {
+    logDecision(`watchdog: 巡逻间隔 ${gapMin.toFixed(0)} 分钟（正常 2-30）——launchd 可能丢失/机器休眠，本轮自动恢复`)
+  }
+  writeFileSync(gapStatePath, JSON.stringify({ at: nowMs }))
+} catch {}
+
 // ---- A3 slice-3 + B04: patrol stats — feed the system health dashboard ----
 try {
   const statsDir = join(process.env.DSH_HOME ?? join(homedir(), '.dsh'), 'muse')
