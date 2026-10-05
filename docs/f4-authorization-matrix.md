@@ -5,7 +5,7 @@ Muse 的授权形态（官方复盘）：一次性 / 仅限当前会话 / 仅限
 
 | Muse 授权形态 | dsh-muse 对应 | 覆盖 | 证据 |
 |---|---|---|---|
-| **持续有效**（standing autonomy） | `muse_autonomy {autonomy:true}` → `muse/intent` 侧车记录（绑定人类消息）→ keeper 跨重启恢复 | ✅ | 桌面重启后记忆注入/keeper 自动恢复（真实重启观察，trial-counting E2 行） |
+| **持续有效**（standing autonomy） | `muse_autonomy {autonomy:true}` → `muse/intent` 侧车记录（绑定人类消息）→ keeper 跨重启恢复 | ✅ | 桌面重启后记忆注入/keeper 自动恢复（真实重启观察，trial-counting（现为 rounds/2026-10-05-trial-counting.md）E2 行） |
 | **限时**（运行 N 次后停止） | `muse_routine {max_runs:N, every_seconds}`——预算耗尽不自动续期，需人类恢复 | ✅ | timer-first.md 合同；tool-muse 测试（预算/暂停/恢复语义） |
 | **仅限当前任务** | routine 绑定单一目标做 review；gate 各 source 独立规则 | 🟡 | 单目标绑定已实现；跨任务的细粒度任务级授权未系统化 |
 | **一次性**（单次动作授权） | dsh-email `email_send` 每次发信弹审批；interaction 审批卡 | ✅ | dsh-email sendApproval 默认开启（发信确认实测于设计文档） |
@@ -20,7 +20,7 @@ Muse 的授权形态（官方复盘）：一次性 / 仅限当前会话 / 仅限
 ## 红线（F4 的不可变部分）
 
 - 授权**只能**由人类直接 turn 授予/撤销（intent 绑定 humanMessageId，autonomous 来源永不生效）——这是 Muse「资料/模型建议不能授予自治」的同源纪律，已由测试固化（六类拒绝路径）。
-- 暂停/撤销后，任何自动来源不得恢复工作（trial-counting 硬门槛行）。
+- 暂停/撤销后，任何自动来源不得恢复工作（trial-counting（现为 rounds/2026-10-05-trial-counting.md）硬门槛行）。
 
 ## 结论
 
