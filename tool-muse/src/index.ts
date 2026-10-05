@@ -87,6 +87,32 @@ interface MuseToolValue {
   readonly autonomy: boolean
 }
 
+interface MuseStatusValue {
+  readonly goal: {
+    readonly available: boolean
+    readonly objective: string
+    readonly phase: string
+    readonly activation: string
+    readonly roundsStarted: number
+    readonly maxGoalRounds: number
+    readonly roundsRemaining: number
+    readonly blockedReason: string
+  }
+  readonly routines: {
+    readonly id: string
+    readonly title: string
+    readonly enabled: boolean
+    readonly state: string
+    readonly everySeconds: number
+    readonly nextRunAt: number
+    readonly runs: number
+    readonly maxRuns: number
+    readonly runsRemaining: number
+    readonly lastSummary: string
+    readonly nextStep: string
+  }[]
+}
+
 const MUSE_VALUE_SCHEMA = {
   type: 'object',
   additionalProperties: false,
@@ -137,6 +163,84 @@ export function apply(ctx: Context): void {
       title: args.autonomy ? 'Enable autonomous goal advancement' : 'Disable autonomous goal advancement',
       kind: 'other',
     } satisfies GenericCallView),
+  }))
+
+  ctx.tools.register(defineTool({
+    name: 'muse_status',
+    description: 'Read a compact status snapshot for THIS session only: current goal phase, activation and remaining round budget, plus routine state, next run and remaining run budget. Read-only; never lists other sessions, exposes routine prompts, or changes authorization/scheduling.',
+    parameters: {},
+    output: {
+      schema: {
+        type: 'object', additionalProperties: false,
+        properties: {
+          goal: {
+            type: 'object', required: true, additionalProperties: false,
+            properties: {
+              available: { type: 'boolean', required: true },
+              objective: { type: 'string', required: true },
+              phase: { type: 'string', required: true },
+              activation: { type: 'string', required: true },
+              roundsStarted: { type: 'integer', required: true },
+              maxGoalRounds: { type: 'integer', required: true },
+              roundsRemaining: { type: 'integer', required: true },
+              blockedReason: { type: 'string', required: true },
+            },
+          },
+          routines: {
+            type: 'array', required: true,
+            items: {
+              type: 'object', additionalProperties: false,
+              properties: {
+                id: { type: 'string', required: true }, title: { type: 'string', required: true },
+                enabled: { type: 'boolean', required: true }, state: { type: 'string', required: true },
+                everySeconds: { type: 'integer', required: true }, nextRunAt: { type: 'number', required: true },
+                runs: { type: 'integer', required: true }, maxRuns: { type: 'integer', required: true },
+                runsRemaining: { type: 'integer', required: true }, lastSummary: { type: 'string', required: true },
+                nextStep: { type: 'string', required: true },
+              },
+            },
+          },
+        },
+      },
+      render: (_args: unknown, value: MuseStatusValue) => [{ type: 'text' as const, text: JSON.stringify(value) }],
+    },
+    execute(_args, exec) {
+      const { agent } = museToolExecution(ctx, exec)
+      const currentGoal = ctx.get('goals')?.get(agent)
+      const goal: MuseStatusValue['goal'] = currentGoal === undefined
+        ? {
+            available: false, objective: '', phase: 'none', activation: 'none',
+            roundsStarted: 0, maxGoalRounds: 0, roundsRemaining: 0, blockedReason: '',
+          }
+        : {
+            available: true,
+            objective: currentGoal.objective,
+            phase: currentGoal.phase,
+            activation: currentGoal.activation,
+            roundsStarted: currentGoal.roundsStarted,
+            maxGoalRounds: currentGoal.maxGoalRounds,
+            roundsRemaining: Math.max(0, currentGoal.maxGoalRounds - currentGoal.roundsStarted),
+            blockedReason: currentGoal.blockedReason?.message ?? '',
+          }
+      const routines = (ctx.get('museRoutines')?.list(agent) ?? []).map(routine => ({
+        id: routine.id,
+        title: routine.title,
+        enabled: routine.enabled,
+        state: !routine.enabled && routine.lastResult?.status === 'done' ? 'completed'
+          : routine.runs >= routine.maxRuns ? 'budget-exhausted'
+            : !routine.enabled ? 'paused'
+              : routine.lastResult?.status === 'waiting' ? 'waiting' : 'scheduled',
+        everySeconds: routine.everySeconds,
+        nextRunAt: routine.nextRunAt,
+        runs: routine.runs,
+        maxRuns: routine.maxRuns,
+        runsRemaining: Math.max(0, routine.maxRuns - routine.runs),
+        lastSummary: routine.lastResult?.summary ?? '',
+        nextStep: routine.lastResult?.nextStep ?? '',
+      }))
+      return Promise.resolve({ goal, routines })
+    },
+    presentCall: () => ({ card: 'generic', title: 'Current Muse status', kind: 'other' } satisfies GenericCallView),
   }))
 
   ctx.tools.register(defineTool({

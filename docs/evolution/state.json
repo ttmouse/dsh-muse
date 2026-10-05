@@ -59,12 +59,12 @@
     {
       "id": "B04",
       "title": "让当前工作、等待和预算一眼可见",
-      "status": "ready",
+      "status": "active",
       "problem": "日志和活动卡不一定能回答当前在做什么、为何等待、何时停止。",
       "hypothesis": "从现有 routine list 和 goal 状态生成单一视图，可减少状态追问，不需要新调度器。",
       "scenario": "E5,E6",
-      "next_action": "先观察用户读现有状态的困难，再决定是否扩展原状态入口；演进看板不充当 runtime 状态。",
-      "evidence": []
+      "next_action": "在 tool-muse 中加入只读 muse_status，把当前 goal 阶段/轮数与 routines 等待、下次运行、剩余预算汇总在当前会话；不读取原始日志、不复制运行时状态、不新增调度。",
+      "evidence": ["R-B04-status-tool"]
     },
     {
       "id": "B05",
@@ -188,6 +188,16 @@
       "summary": "统一运行时与评估器 prompt 后复测 15 条纯合成输入：precision 100%（5/5）、recall 83%（5/6）、重复 0；例会提醒标签待独立人工确认",
       "evidence": [
         "docs/evolution/rounds/2026-10-05-b02-prompt-parity.md"
+      ]
+    },
+    {
+      "id": "R-B04-status-tool",
+      "candidate": "B04",
+      "decision": "inconclusive",
+      "level": "engineering",
+      "summary": "基线盘点显示 shell 状态脚本不含 goal/routine 预算，且直接打印决策日志；开始实现当前会话内只读摘要工具",
+      "evidence": [
+        "docs/evolution/rounds/2026-10-05-b04-status-tool.md"
       ]
     }
   ]
