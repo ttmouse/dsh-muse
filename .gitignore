@@ -9,5 +9,6 @@ examples/gate/local-rules.json
 examples/gate/gate-decisions.log
 examples/gate/.gate-state/
 examples/reflect/reflect-decisions.log
-demo-journal.md
-examples/reflect/reflect-decisions.log
+reflect-decisions.log
+examples/.gate-state/
+*.log

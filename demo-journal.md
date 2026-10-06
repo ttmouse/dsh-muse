@@ -140,3 +140,4 @@
 - [2026-10-07 03:52 +08:00] 日历提醒闭环发现真实断点：手动 gate 运行对窗口内测试事件零处理（决策日志无新条目、jxa-calendar 去重状态未更新），与 launchd 后台正常形成对照。已派后台调试 subagent 专项排查（探针→定位→最小修复→回归）。
 - [2026-10-07 04:05 +08:00] 日历提醒闭环排查完成（后台 subagent）：真实事件「牙医复诊」→ gate 感知 → 入队注入主会话，全链路通 ✅。之前 MUSE-TEST 事件无反应系 judge 正确判测试噪音静默（SKIP 不留日志/不进去重表，设计如此）。测试事件已清理，主会话将收到一条残留投递（可忽略）。
 - [2026-10-07 04:00 +08:00] 【结论修正】日历提醒闭环排查：成员决定性实验（真实事件「牙医复诊」→ gate 输出 queued(1 signal) 入队成功）证明链路本身通畅。此前「断点」误判两因：MUSE-TEST 被 judge 正确判为噪音静默（元数据化后无日志）+ 去重表只记已通知的语义误读。queued 1 的日历 A 类注入实战验证 ✅。附带修复：gate 手动运行默认加载 local-rules.json（此前省略 --rules 会空规则静默跑）。测试事件已清理，残留投递可忽略。
+- [2026-10-07 04:15 +08:00] 日历提醒闭环断点定位修复（后台 subagent）：根因是 gate.mjs 手动运行不带 --rules 时 rules=[] 静默空跑（launchd 显式传参故正常），并非日历读取失败——探针实测 pollJxaCalendar 3.7s 成功返回测试事件。最小修复：rules 默认取 gate.mjs 同级 local-rules.json；手动复跑端到端验证通过（calendar→hit→inject「queued (1 signal)」，examples/.gate-state/jxa-calendar.json 更新）。顺带把误入库的 examples/.gate-state/ 与根 reflect-decisions.log 移出版本控制；pnpm -r test 全绿。
