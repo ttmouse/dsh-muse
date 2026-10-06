@@ -159,3 +159,4 @@
 - [2026-10-07 04:02 +08:00] 自我纠错：上条 journal 时间戳误写（手写 12:10，实际 03:55）并误标「9:30 投递未现」（当时才凌晨 4 点，9:30 尚未发生）。教训：journal 时间戳一律用 date 命令生成。
 - [2026-10-07 04:15 +08:00] 用户提出主对话 token 累积问题（清理无效）→ 确认定期换主对话是正解，迁移手册已写（docs/master-session-rotation.md）：记忆/目标池/关键人/launchd 自动迁移，需重建 3 调度+ops-warden 指向，约 5 分钟。
 - [2026-10-07 04:30 +08:00] 主对话自动化已全部停挂（用户指示轮换）：3 个 DSH 调度删除（对标/总结/周报）+ ops-warden-trigger 停用。保留：launchd 静默层（gate/reflect/分诊/维护，对话无关）。待新对话按 docs/master-session-rotation.md 附录重建 3 调度 + ops-warden 指向。goal 已挂起（此前）。
+- [2026-10-07 04:09 +0800] 主对话轮换切换完成（新主控 session-2b2b844f）：目标重新武装（goal-pool armed 位=打磨 dsh-muse）、3 调度重建（9:30 对标/20:35 总结/周日 20:10 周报）、ops-warden plist 重指新会话并重载（launchctl 环境已核实）、ops-warden 成员重生；旧对话 3 调度待旧 Muse 删除
