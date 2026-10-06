@@ -6,7 +6,7 @@
  * journal 留痕、信号箱增量。输出 Markdown 片段供每日总结管线引用。
  * 用法: node daily-summary-sources.mjs [--date YYYY-MM-DD]
  */
-import { execFileSync } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
@@ -27,7 +27,7 @@ try {
       const log = r.stdout ?? ''
       const lines = log.split('\n').filter(Boolean)
       if (lines.length > 0) commits.push({ project: name, lines })
-    } catch {}
+    } catch (e) { console.error(`daily-sources: ${name} git 读取失败:`, String(e).slice(0, 120)) }
   }
 } catch {}
 if (commits.length > 0) {
@@ -46,7 +46,7 @@ try {
     out.push(`\n## dsh-muse 今日留痕（${today.length} 条）`)
     for (const l of today.slice(0, 15)) out.push(`- ${l.replace(/^- /, '').slice(0, 120)}`)
   }
-} catch {}
+} catch (e) { console.error('daily-sources: journal 读取失败:', String(e).slice(0, 120)) }
 
 // ---- 3. 输出（stdout + /tmp 供管线读取） ----
 const md = out.join('\n')

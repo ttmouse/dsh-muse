@@ -128,3 +128,10 @@
 - [2026-10-06T07:56:34.334Z] reflection: memory_added=0; idea=none; plan=gate 端到端注入验证通过；triage 批次重复注入问题仍待修复（gate 端持久化已见集合）。
 - [2026-10-06T08:26:37.792Z] reflection: memory_added=1; idea=none; plan=gate 去重（.gate-state/ 已见集合）是当前唯一可推进的明确缺陷，优先实现并自测。
 - [2026-10-06T08:56:40.718Z] reflection: memory_added=1; idea=none; plan=gate 端去重（.gate-state/ 已见集合）是当前唯一被反复复现、可直接开工的缺陷，优先修它。
+- [2026-10-06T09:26:43.311Z] reflection: memory_added=1; idea=none; plan=重复注入已第四次复现，gate 端去重（.gate-state/ 已见集合）应作为当前最高优先修复项推进。
+- [2026-10-06T09:56:45.673Z] reflection: memory_added=0; idea=none; plan=本轮为 gate/triage 重复注入的自动消息，无新增可支持记忆；重复注入问题已在项目记忆中记录四次，无需再写。
+- [2026-10-06T13:43:04.508Z] reflection: memory_added=0; idea=none; plan=本轮为 gate/triage 注入验证与微信推送批次，无新增可沉淀的持久教训；gate 端已见集合去重仍是待办加固项。
+- [2026-10-06T16:54:49.652Z] reflection: memory_added=1; idea=none; plan=无新增可执行项；gate 端持久化已见集合仍是待加固方向。
+- [2026-10-06T17:24:52.347Z] reflection: memory_added=0; idea=none; plan=gate 端到端注入测试消息，无新增可持久化内容；triage 批次仍为重复微信推送，去重加固方向已在记忆中。
+- [2026-10-06T17:54:54.383Z] reflection: memory_added=0; idea=none; plan=gate 端到端注入测试消息，无新增可持久化教训；triage 批次仍为重复微信推送，去重加固已在项目记忆中记录。
+- [2026-10-06T18:24:56.757Z] reflection: memory_added=0; idea=none; plan=本轮为 gate/triage 端到端注入测试，无新增可沉淀的持久事实或偏好。
