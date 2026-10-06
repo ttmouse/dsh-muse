@@ -1,0 +1,42 @@
+# 主对话轮换手册（Master Session Rotation）
+
+> 背景：主对话持续累积上下文（goal 轮次、任务卡、文件编辑记录），UI 清理不减少底层 token。定期换新对话是正确做法。**所有重要状态都在对话外的持久层，换对话零数据丢失。**
+
+## 自动迁移（无需操作）
+
+| 状态 | 载体 | 说明 |
+|---|---|---|
+| 全局记忆（lessons/preferences/关键人/目标观） | ~/.dsh/memories/main.md | 新会话自动注入 |
+| 项目记忆 | ~/.dsh/memories/projects/ | 新会话自动注入 |
+| 目标池（4 个长期目标） | ~/.dsh/muse/goal-pool.json | 随时可读 |
+| 关键人注册表 | ~/.dsh/muse/key-people.json + 记忆 | 已入记忆 |
+| Muse 身份 | ~/.dsh/muse/identity.json | 自动注入 |
+| launchd 静默层（gate/reflect/分诊/复盘触发） | ~/Library/LaunchAgents/com.dsh-muse.* | 与对话无关，继续跑 |
+
+## 需要在新对话重建（约 5 分钟）
+
+### 1. 恢复目标模式（1 句话）
+新对话里说：**「继续」+ 简述目标**（例如「继续打磨 dsh-muse，目标池在 ~/.dsh/muse/goal-pool.json」）。
+keeper 会武装目标；把 goal-pool.json 的 armed 目标贴给它确认即可。
+
+### 2. 重建 3 个每日调度（各 1 次 schedule_create）
+- **9:30 每日对标审查**：web_search Muse 新细节 + Today.app 版本监测 + 清单核对（prompt 见旧对话或按 docs/capability-checklist.md 语义重建）
+- **20:35 每日项目总结**：三源管线（node examples/daily-summary-sources.mjs + ec review + 记忆增量 → ev_add_md 写入当日笔记）
+- **周日 20:10 每周摘要**：node examples/weekly-digest.mjs --note
+
+### 3. 更新 ops-warden 触发器指向（1 行）
+examples/ops-warden-trigger.plist 的 MUSE_SESSION_ID 改为新会话 id，然后：
+`launchctl bootout gui/$(id -u)/com.dsh-muse.ops-warden-trigger; launchctl bootstrap gui/$(id -u) ~/Projects/dsh-muse/examples/ops-warden-trigger.plist`
+
+### 4. 重生 ops-warden 成员（1 句话）
+对新 Muse 说：「重建 ops-warden 常驻运维成员」（charter 见 docs/evolution/rounds/2026-10-06-agent-team-retro.md 的成员模板节）。
+
+## 旧对话的处置
+
+- **保留不删**：它是完整的工作档案（100+ 轮、全部任务卡、调试历史）
+- ops-warden 旧实例随父会话休眠，不再被触发（plist 已改指新会话）
+
+## 轮换节奏建议
+
+- 触发信号：上下文感觉「变笨」（遗忘早前决定、重复已修问题）或 UI 显示 token 压力
+- 建议频率：**每周一次**（周一早上换新，配合周报正好闭环）
