@@ -35,6 +35,7 @@ examples/ops-warden-trigger.plist 的 MUSE_SESSION_ID 改为新会话 id，然�
 
 - **保留不删**：它是完整的工作档案（100+ 轮、全部任务卡、调试历史）
 - ops-warden 旧实例随父会话休眠，不再被触发（plist 已改指新会话）
+- 旧调度核验：用 `callRpc(MUSE_URL,'schedule/list',{sessionId:旧id})` 查旧会话调度数（2026-10-07 轮换实测：会话关闭后为 0，无双跑）；为 0 则无需再让旧对话删（示例探针见 examples/lib/dsh-client.mjs 的 callRpc）
 
 ## 轮换节奏建议
 

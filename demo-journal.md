@@ -162,3 +162,4 @@
 - [2026-10-07 04:09 +0800] 主对话轮换切换完成（新主控 session-2b2b844f）：目标重新武装（goal-pool armed 位=打磨 dsh-muse）、3 调度重建（9:30 对标/20:35 总结/周日 20:10 周报）、ops-warden plist 重指新会话并重载（launchctl 环境已核实）、ops-warden 成员重生；旧对话 3 调度待旧 Muse 删除
 - [2026-10-07 04:20 +08:00] 交接完成：新主对话 = session-2b2b844f（交接简报已注入，指向迁移手册）；ops-warden-trigger plist 已重指新会话并重载 ✓。本对话全部自动化已停挂/迁移，归档为工作档案（100 goal 轮、21 账本轮、59+ 提交/2 天）。goal 挂载需用户在新对话说一句「继续」（授权边界设计）。
 - [2026-10-07 04:10 +0800] 仓库卫生：根 gate-decisions.log（gate 运行态追加日志）untrack——*.log 规则早已在 .gitignore 但文件先于规则被 track，导致树常年脏（retro 摩擦点#4 脏状态传染的最后一处）；test:evolution 6/6 绿
+- [2026-10-07 04:14 +0800] 轮换收尾核验：schedule/list API 交叉验证——旧会话调度 0 条（新会话 3 条对照），双跑风险不存在，用户无需再去旧对话删调度；验证法已写进手册 cutover 节。同轮：根 gate-decisions.log untrack（树常年脏最后一处，fc988e4）
