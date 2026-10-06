@@ -29,7 +29,7 @@ examples/ops-warden-trigger.plist 的 MUSE_SESSION_ID 改为新会话 id，然�
 `launchctl bootout gui/$(id -u)/com.dsh-muse.ops-warden-trigger; launchctl bootstrap gui/$(id -u) ~/Projects/dsh-muse/examples/ops-warden-trigger.plist`
 
 ### 4. 重生 ops-warden 成员（1 句话）
-对新 Muse 说：「重建 ops-warden 常驻运维成员」（charter 见 docs/evolution/rounds/2026-10-06-agent-team-retro.md 的成员模板节）。
+对新 Muse 说：「重建 ops-warden 常驻运维成员」（charter 正本：~/.dsh/muse/ops-warden-charter.md，spawn prompt 直接用其正文；2026-10-07 修正——原指向 retro 文档「成员模板节」不存在）。
 
 ## 旧对话的处置
 
