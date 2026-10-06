@@ -165,3 +165,4 @@
 - [2026-10-07 04:14 +0800] 轮换收尾核验：schedule/list API 交叉验证——旧会话调度 0 条（新会话 3 条对照），双跑风险不存在，用户无需再去旧对话删调度；验证法已写进手册 cutover 节。同轮：根 gate-decisions.log untrack（树常年脏最后一处，fc988e4）
 - [2026-10-07 04:20 +08:00] 每日自动轮换上线（用户需求）：rotate-master.mjs + launchd 每日 8:00——创建新主会话→注入晨间交接简报（目标池/关键人/纪律/重建清单）→重指双 plist→幂等落盘。今日轮换已执行（新主会话 session-da8579be）。用户晨间打开 App 即见就绪的新对话，直接对话即可。
 - [2026-10-07 04:22 +0800] 分诊去重加固（TDD）：triage 容量-1哈希→持久化已见集合（examples/lib/seen-set.mjs，TTL 24h+cap50，交替批次回归用例证明旧缝隙）；顺带修 8b596d6 副作用——timers 测试误载真实 local-rules（jxa+LLM 11.5s>10s 超时），--rules 空文件恢复隔离。8/8+6/6 绿，R-triage-seenset 入账本
+- [2026-10-07 04:24 +0800] 轮换链路预演（9:05 首跑前的 kickstart 实测）：launchctl kickstart 按生产 plist 环境触发 ops-warden-trigger——脚本跑通、MUSE_SESSION_ID 解析为新会话、路由指令已 queue 注入本会话（/tmp/dsh-muse-ops-warden.log 证据），成员在位待转交。9:05 真实触发链路已验证
