@@ -126,3 +126,5 @@
 - [2026-10-06T04:56:28.555Z] reflection: memory_added=0; idea=none; plan=gate 端到端注入验证通过；下一步按已记 lesson 在 gate 层加持久化已见集合去重，避免同批 triage 重复注入。
 - [2026-10-06T05:26:30.246Z] reflection: memory_added=0; idea=none; plan=gate 端到端注入验证已收到，回复首行写「gate 注入 OK」；triage 批次重复注入问题仍待 gate 端去重修复。
 - [2026-10-06T07:56:34.334Z] reflection: memory_added=0; idea=none; plan=gate 端到端注入验证通过；triage 批次重复注入问题仍待修复（gate 端持久化已见集合）。
+- [2026-10-06T08:26:37.792Z] reflection: memory_added=1; idea=none; plan=gate 去重（.gate-state/ 已见集合）是当前唯一可推进的明确缺陷，优先实现并自测。
+- [2026-10-06T08:56:40.718Z] reflection: memory_added=1; idea=none; plan=gate 端去重（.gate-state/ 已见集合）是当前唯一被反复复现、可直接开工的缺陷，优先修它。
