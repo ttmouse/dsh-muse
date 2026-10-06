@@ -28,14 +28,31 @@ for (const c of cal.calendars()) {
 JSON.stringify(out)
 `
 
+function spawnOsascript(script, timeoutMs) {
+  return execFileSync('osascript', ['-l', 'JavaScript', '-e', script], { timeout: timeoutMs, encoding: 'utf8' })
+}
+
 /** Poll macOS Calendar for upcoming events. rule: { hoursAhead?, calendar?, excludeCalendars? } */
 export function pollJxaCalendar(rule) {
   const script = JXA.replaceAll('__HOURS__', String(rule.hoursAhead ?? 24))
+  // 30s is enough for a healthy osascript run (measured 4-14s); 90s blocked the whole
+  // patrol cycle when a TCC automation prompt was pending in the background.
+  const TIMEOUT_MS = 30000
   let raw
   try {
-    raw = execFileSync('osascript', ['-l', 'JavaScript', '-e', script], { timeout: 90000, encoding: 'utf8' })
+    try {
+      raw = spawnOsascript(script, TIMEOUT_MS)
+    } catch (first) {
+      // one quick retry: transient Calendar.app / Apple Events hangs self-heal
+      raw = spawnOsascript(script, TIMEOUT_MS)
+    }
   } catch (error) {
     const msg = String(error)
+    if (msg.includes('ETIMEDOUT')) {
+      const err = new Error('calendar read timed out — if this recurs, re-grant Calendar automation permission in System Settings (the TCC prompt cannot show in background launchd context)')
+      err.code = 'CALENDAR_TIMEOUT'
+      throw err
+    }
     if (msg.includes('not allowed') || msg.includes('permit') || msg.includes('-1743')) {
       const err = new Error('calendar-permission-required')
       err.code = 'CALENDAR_PERMISSION_REQUIRED'
