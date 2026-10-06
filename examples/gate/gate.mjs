@@ -50,7 +50,12 @@ if (!args['session']) { console.error('gate: --session <sessionId> is required')
 // launchd runs with cwd=/ — derive the project root from this script's location instead
 const scriptRoot = fileURLToPath(new URL('../../', import.meta.url))
 const projectDir = process.env.MUSE_PROJECT_DIR ?? scriptRoot
-const rules = args['rules'] ? JSON.parse(readFileSync(resolve(args['rules']), 'utf8')) : []
+// Default to the sibling local-rules.json so a manual `node gate.mjs --session X`
+// behaves the same as the launchd patrol (which passes --rules explicitly).
+// Without this default, an omitted --rules silently ran with rules=[] and the
+// jxa-calendar/imap sources never fired.
+const rulesPath = args['rules'] ?? fileURLToPath(new URL('./local-rules.json', import.meta.url))
+const rules = existsSync(rulesPath) ? JSON.parse(readFileSync(resolve(rulesPath), 'utf8')) : []
 const signalPath = join(projectDir, 'MUSE-SIGNAL.md')
 
 /** Collect (message, consumePath?) pairs that passed the gate. */
