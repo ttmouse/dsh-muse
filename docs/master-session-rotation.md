@@ -40,3 +40,40 @@ examples/ops-warden-trigger.plist 的 MUSE_SESSION_ID 改为新会话 id，然�
 
 - 触发信号：上下文感觉「变笨」（遗忘早前决定、重复已修问题）或 UI 显示 token 压力
 - 建议频率：**每周一次**（周一早上换新，配合周报正好闭环）
+
+## 附录：3 个调度的完整 prompt（新对话照抄重建）
+
+### A. 每日对标审查（cron: 30 9 * * *，Asia/Shanghai）
+```
+【每日 Muse 对标审查】对 /Users/douba/Projects/dsh-muse/docs/capability-checklist.md 做例行维护：
+1) web_search 查询 Meta Muse 官方新披露的能力细节，有新细节补进清单（注明来源）；
+2) 本机对标应用监测：检查 /Applications/Today.app 的版本（Info.plist CFBundleShortVersionString，基线 1.21.3）是否更新；
+3) 核对清单：对照 git log 近期提交，把已实现但未打勾的项改为 ✅（附证据），核对 🟡/❌ 是否仍准确；
+4) 有变化才更新文档并 commit+push，无变化静默。不改代码、不做重构。
+```
+
+### B. 每日项目总结（cron: 35 20 * * *）
+```
+【每日项目总结】执行每日总结管线：
+1) node /Users/douba/Projects/dsh-muse/examples/daily-summary-sources.mjs --date 今天
+2) ec review --since 1d --limit 200
+3) 读 ~/.dsh/memories/main.md 与项目记忆中今日新增条目
+4) Markdown 起草（git 提交/聊天复盘/记忆增量/阻塞与决策各节，真实出处不编造），用
+   python3 ~/.agents/skills/note-cli/scripts/ev_add_md.py <临时md> --date 今天 --key daily-summary-<日期>-vN
+   写入当日日记（--date 报错就改 --under 今天日记已有节点）
+5) ev get 读回核对
+6) demo-journal.md 记一行「每日总结：已写入笔记」。有需用户知道的事项一句话汇报，否则静默。
+```
+
+### C. 每周摘要（cron: 10 20 * * 0，周日）
+```
+【每周摘要】运行 node /Users/douba/Projects/dsh-muse/examples/weekly-digest.mjs --note 生成周报并写入 Evergreen 笔记
+（写入失败就用输出内容手动起草经 ev_add_md 写入）。完成后 demo-journal.md 记一行「周报已生成」。
+有需用户关注的周度发现一句话汇报，否则静默。
+```
+
+### 切换顺序（避免双跑或空窗）
+1. 新对话：照抄 A/B/C 创建 3 个调度
+2. 新对话：更新 examples/ops-warden-trigger.plist 的 MUSE_SESSION_ID → 新会话 id，bootstrap 重载
+3. 旧对话：让旧 Muse 执行 schedule_delete 删除 A/B/C 三个旧调度（schedule_list 拿 id）
+4. 验证：次日 9:05/9:30/20:35 的卡片出现在新对话
