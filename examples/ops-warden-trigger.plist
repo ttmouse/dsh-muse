@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.dsh-muse.ops-warden-trigger</string>
+  <key>ProgramArguments</key><array>
+    <string>/opt/homebrew/bin/node</string>
+    <string>/Users/douba/Projects/dsh-muse/examples/ops-warden-trigger.mjs</string>
+  </array>
+  <key>WorkingDirectory</key><string>/Users/douba/Projects/dsh-muse</string>
+  <key>EnvironmentVariables</key><dict>
+    <key>MUSE_SESSION_ID</key><string>session-87907a64-2dde-4184-9cbf-e3269940c29d</string>
+    <key>MUSE_URL</key><string>http://127.0.0.1:19387</string>
+  </dict>
+  <key>StartCalendarInterval</key><array>
+    <dict><key>Hour</key><integer>9</integer><key>Minute</key><integer>5</integer></dict>
+    <dict><key>Hour</key><integer>21</integer><key>Minute</key><integer>30</integer></dict>
+  </array>
+  <key>RunAtLoad</key><false/>
+  <key>StandardOutPath</key><string>/tmp/dsh-muse-ops-warden.log</string>
+  <key>StandardErrorPath</key><string>/tmp/dsh-muse-ops-warden.log</string>
+</dict></plist>
