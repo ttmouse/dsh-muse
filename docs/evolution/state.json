@@ -91,7 +91,8 @@
       "evidence": [
         "R-B06-orchestrator",
         "R-24h-retro",
-        "R-agent-team-retro"
+        "R-agent-team-retro",
+        "R-multigoal-e2e"
       ],
       "summary": "主控编排定案：官方 agent-team（成员会话+共享任务板 CAS+面板）为并行工作基座；3 并行成员 42s 交付、零越界、账本零污染"
     }
@@ -263,6 +264,16 @@
       "decision": "accepted",
       "level": "runtime",
       "summary": "agent-team 化改造测试+复盘：3 并行成员 42s 交付三文档任务（串行需 10-15min），写入范围零越界，CAS 防冲突生效；6 项迭代优化入清单",
+      "evidence": [
+        "docs/evolution/rounds/2026-10-06-agent-team-retro.md"
+      ]
+    },
+    {
+      "id": "R-multigoal-e2e",
+      "candidate": "B06",
+      "decision": "accepted",
+      "level": "runtime",
+      "summary": "目标级并发实战：2 成员各带多步目标并行交付（FAQ 补全 + 语料扩容），均自行 commit/汇报；日历闭环自测：事件创建+gate 读路径健康",
       "evidence": [
         "docs/evolution/rounds/2026-10-06-agent-team-retro.md"
       ]
