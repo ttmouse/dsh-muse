@@ -83,15 +83,17 @@
     {
       "id": "B06",
       "title": "主控编排：单对话多目标（工作者会话架构）",
-      "status": "waiting",
+      "status": "accepted",
       "problem": "用户期望 Muse 式单对话多目标，但 DSH create_goal 单会话单目标；多会话方案违背单一对话核心体验（用户明确否决）",
       "hypothesis": "若 DSH 提供保留消息来源身份且可强制限制工具/文件范围的 worker 入口，则主会话可汇总多个有界工作单元而不扩张自治授权",
       "scenario": "E1,E3,E5",
       "next_action": "解除条件：验证一个保留消息来源身份、且工具与文件范围可强制限制的 DSH worker 派发入口；或由用户在 DSH 主会话直接授权端到端试运行。不得用 session/prompt 或 Codex 授权替代。",
       "evidence": [
         "R-B06-orchestrator",
-        "R-24h-retro"
-      ]
+        "R-24h-retro",
+        "R-agent-team-retro"
+      ],
+      "summary": "主控编排定案：官方 agent-team（成员会话+共享任务板 CAS+面板）为并行工作基座；3 并行成员 42s 交付、零越界、账本零污染"
     }
   ],
   "rounds": [
@@ -253,6 +255,16 @@
       "summary": "首个 24h 全周期机制复盘：371 次巡逻零误报、2 事故闭环、watchdog 自监控新增；O2(jxa 后台超时)/O3(真实信号) 排队",
       "evidence": [
         "docs/evolution/rounds/2026-10-06-24h-retro.md"
+      ]
+    },
+    {
+      "id": "R-agent-team-retro",
+      "candidate": "B06",
+      "decision": "accepted",
+      "level": "runtime",
+      "summary": "agent-team 化改造测试+复盘：3 并行成员 42s 交付三文档任务（串行需 10-15min），写入范围零越界，CAS 防冲突生效；6 项迭代优化入清单",
+      "evidence": [
+        "docs/evolution/rounds/2026-10-06-agent-team-retro.md"
       ]
     }
   ]

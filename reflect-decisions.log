@@ -124,3 +124,4 @@
 - [2026-10-06T03:56:23.815Z] reflection: memory_added=0; idea=none; plan=gate 端到端注入测试：首行输出「gate 注入 OK」，无新增持久记忆。
 - [2026-10-06T04:26:26.255Z] reflection: memory_added=0; idea=none; plan=gate 端到端注入测试，无新增持久记忆。
 - [2026-10-06T04:56:28.555Z] reflection: memory_added=0; idea=none; plan=gate 端到端注入验证通过；下一步按已记 lesson 在 gate 层加持久化已见集合去重，避免同批 triage 重复注入。
+- [2026-10-06T05:26:30.246Z] reflection: memory_added=0; idea=none; plan=gate 端到端注入验证已收到，回复首行写「gate 注入 OK」；triage 批次重复注入问题仍待 gate 端去重修复。
