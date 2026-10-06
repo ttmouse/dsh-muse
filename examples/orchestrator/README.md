@@ -39,6 +39,8 @@ The official agent-team plugin resolves the main-control orchestration problem: 
 
 This preserves the Muse invariants: autonomy still comes only from the direct human request to the Lead; members inherit nothing they could use to rearm goals or write shared state.
 
+
+**Member goal-mode convention**: for goal-shaped members (multi-step, progress visible in the panel), the charter must include — "formalize your objective with the goal tool before working, so the team panel shows goal mode". From the member's perspective the Lead's spawn message is its direct human authorization (compliant). One-shot task members (single-file edits) don't need goal mode; plain turns suffice.
 ### Legacy modes (reference only)
 
 **Dispatch is currently unavailable from this example.** `spawn-worker.mjs` only formats a contract and reports `dispatched: false`. It must not call the DSH `session/prompt` RPC: `docs/timer-first.md` explicitly says automated producers must use a non-human source because this RPC can masquerade as human input. A separate headless process demonstrated OS-level parallelism, but did not establish a supported, provenance-preserving DSH worker authorization path. Do not treat that experiment or a Codex request as DSH authorization.
