@@ -10,7 +10,7 @@
  * A 类线索（确定性）: 问句/等你/有空/帮忙/拜托/别忘了/deadline/截止/记得/沟通
  */
 import { execFileSync } from 'node:child_process'
-import { appendFileSync } from 'node:fs'
+import { appendFileSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const HOME = process.env.HOME ?? homedir()
@@ -29,7 +29,8 @@ const followups = []
 try {
   const out = execFileSync('dws', ['chat', '+at-me', '--days', '3', '--format', 'json'], { timeout: 60000, encoding: 'utf8' })
   const d = JSON.parse(out)
-  for (const m of d.get('messages') ?? []) {
+  const msgs = d.messages ?? d.data?.messages ?? []
+  for (const m of msgs) {
     const text = String(m.text ?? m.content ?? '')
     if (A_CUES.test(text)) followups.push(`钉钉 @我（${m.sender ?? '?'}）: ${text.slice(0, 80)}`)
   }
@@ -46,6 +47,8 @@ try {
     if (Number(s.unread_count ?? 0) === 0) continue
     const u = String(s.username)
     if (u.includes('chatroom') || u.includes('foldgroup') || u === 'weixin') continue
+    // 公众号/服务号不是真人对话：gh_ 前缀、brand* 会话、gutter 等一律跳过
+    if (/^gh_/.test(u) || /brandservice|gutter|official/i.test(u) || (s.display_name && /公众号|发布|日报|医典|税务|银行/i.test(String(s.display_name)))) continue
     if (s.last_msg_sender && String(s.last_msg_sender).includes('豆爸')) continue // 最后是本人发的=已回复
     const ageH = s.last_timestamp ? (nowS - Number(s.last_timestamp)) / 3600 : 999
     if (ageH > 24) continue
