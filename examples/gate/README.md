@@ -56,6 +56,16 @@ node gate.mjs --session <sessionId> [--url http://127.0.0.1:3080] [--rules rules
 
 `launchctl load ~/Library/LaunchAgents/com.dsh-muse.gate.plist` 后即生效。Linux 用 cron 等价：`* * * * * node /path/to/gate.mjs --session ...`。
 
+## 巡逻间隔 watchdog（自监控）
+
+每次巡逻开始时，gate 会把时间戳写入 `.gate-state/last-patrol.json` 并与上一次对比：间隔超过 **30 分钟**（正常 2-30 分钟）说明 launchd 可能丢失或机器休眠过，gate 会在决策日志里记一条 `watchdog: 巡逻间隔 N 分钟……本轮自动恢复` 并继续本轮巡逻（自动恢复，不需人工干预）。该文件在 `.gate-state/` 下，不入库。
+
+## 日历 source（jxa-calendar）与超时策略
+
+`rules.json` 支持 `jxa-calendar`：通过 osascript JXA 读取本地 Calendar.app 未来 N 小时（`hoursAhead`，默认 24）的事件，支持 `calendar`/`excludeCalendars` 过滤，事件按 `start|summary` 去重（状态文件 `.gate-state/jxa-calendar.json`，只报告新事件）。
+
+超时策略：osascript 超时为 **30 秒**（健康运行实测 4-14s；旧值 90s 会在 TCC 授权弹窗后台挂起时阻塞整轮巡逻）。超时后自动**快速重试一次**；仍失败则抛出 `CALENDAR_TIMEOUT` 错误分类——若反复出现，去「系统设置 → 隐私与安全性 → 自动化」重新授予日历权限（TCC 授权弹窗在 launchd 后台上下文里无法显示，需前台手动确认）。无权限则抛 `CALENDAR_PERMISSION_REQUIRED`。
+
 ## 验证
 
 `pnpm test:timers` 覆盖静默、敏感内容在判断前拒绝、正常信号持久排队与 dry-run 不消费信号。原生投递、失败重试和重启恢复见 muse 包测试。运行环境未加载新版插件时，待办保留而不会伪装成人类消息。
@@ -82,4 +92,6 @@ node gate.mjs --session <sessionId> [--url http://127.0.0.1:3080] [--rules rules
 ```
 
 会话 id 与端口在 `gate/local-config.env`。launchd 日志：`/tmp/dsh-muse-gate.log`、`/tmp/dsh-muse-reflect.log`。
+
+决策日志（`gate-decisions.log` / `reflect-decisions.log`）已**元数据化**：`examples/muse-status.sh` 只显示日志的修改时间和行数（content hidden），不再打印消息内容——避免把巡逻细节/注入内容泄漏到状态输出里；要看内容需直接打开日志文件。
 IMAP 邮件源：在 `gate/local-rules.json` 加 `{"type":"imap","host":"imap.gmail.com","port":993,"user":"你@gmail.com","passwordRef":"MUSE_IMAP_PASSWORD","markSeen":true}`，密码存 `~/.dsh/.credentials.yaml` 的 `MUSE_IMAP_PASSWORD:` 键。
