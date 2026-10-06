@@ -155,3 +155,4 @@
 - [2026-10-06 12:40 +08:00] 架构升级：消息分诊移到脚本侧（launchd 承载）——静默=零对话接触，仅 A 类注入。旧 30 分钟 DSH 分诊调度将由用户确认后退役。
 - [2026-10-07 03:58 +08:00] 日历提醒闭环端到端验证 ✅（调试 subagent）：事件创建→gate 读取→judge 判 SAY→注入主会话全链路通。两次 judge:SAY 记录确认（牙医复诊/测试事件）。附带宽利：活跃决策日志在仓库根 gate-decisions.log（examples/gate/ 下是旧版残留误导文件）；无 --judge 时 gate 直接注入不经判断（设计如此，launchd plist 已含 --judge）。测试事件已清理。
 - [2026-10-07 12:00 +08:00] 日历 A 类注入实战验证 ✅（queued 1 项闭环）：双独立调查交叉确认——真实事件→gate 感知→judge SAY→注入主会话全链路通；活跃去重状态含全部 4 条测试/真实事件。误导残留 examples/gate/gate-decisions.log（10-05 旧版）已删除，活跃日志为仓库根 gate-decisions.log。附带：gate 手动运行默认加载 local-rules.json 修复入库（8b596d6/1d2fbad）。
+- [2026-10-07 12:10 +08:00] 每日对标审查：抓到重磅——Muse person pages 机制被系统提示词提取暴露（Facts/History/Relationship/Open Threads/Strengthening 段落+每小时更新）；清单新增 I 类（I1/I2 待建、I3/I4 我们已有或更优）；Today.app 1.21.3 无变化；9:30 调度投递未现（调度存在，今晚复盘排查）

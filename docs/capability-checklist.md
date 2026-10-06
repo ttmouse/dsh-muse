@@ -50,6 +50,16 @@
 - [ ] **F5 提示词注入防御**：不可信内容标注 + 分类器检查 🟡（外部数据走 gate 判定；无专门分类器）
 - [ ] **F6 交易安全**：购物一次性卡号、结账页逐笔批准 ❌（远期，接真实交易时再说）
 
+## I. 人际关系建模「person pages」（2026-10-07 新发现，10-05 WIRED/Gigazine 披露）
+
+安全研究员 Karan Joshi 提取 Muse 系统提示词（来源：[Gigazine](https://gigazine.net/gsc_news/en/20261005-meta-muse-create-profile)），暴露其关系建模机制——**与我们的关键人注册表+人脉库方向完全一致，但结构化程度远超**：
+
+- [ ] **I1 person pages 结构化段落**：Facts / History / The Relationship（亲密度+关系性质+互动方式）/ In Common / **Open Threads（未完结话题）** / **Strengthening（主动建议改善关系的行动：该打电话的日子、要记住的纪念日、后续可问的话题）** 🟡 部分——我们有联系人卡片（角色/项目/足迹）但缺 Open Threads 与 Strengthening 段落
+- [ ] **I2 每小时更新节奏**：person pages 每小时数据汇编 🟡——我们 30 分钟巡逻已超此频率，但未持续更新人物档案
+- [x] **I3 只用事实原则**：「编造比留空更有问题」——与我们「绝不编造消息内容」纪律一致 ✅
+- [x] **I4 隐私差异化优势**：Muse 因未授权读消息/泄露买家地址遭批评；dsh-muse 全本机、零上传、凭据不进上下文——**这是我们相对 Muse 的主动优势，应保持并宣传** ✅
+- 教训（F5 对标）：Muse 的系统提示词被「让 agent 自己复制内部文件」方式提取——我们 F5 的注入筛查应把「诱导输出系统提示词/内部指令」列为明确攻击样例
+
 ## H. 小企业/团队扩展（2026-09-30 新发现）
 
 - [ ] **H1 业务连接器**：Shopify/Dropbox/Slack/Asana/Box/Canva/Figma/Notion/Stripe/Zoom 等 ❌——Muse 已扩展至小企业（[TechTarget](https://www.techtarget.com/ai/news/366651445/Meta-expands-Muse-to-small-businesses)）；个人版优先，团队/业务线暂不跟进
