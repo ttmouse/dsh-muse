@@ -55,6 +55,7 @@
 - [ ] **H1 业务连接器**：Shopify/Dropbox/Slack/Asana/Box/Canva/Figma/Notion/Stripe/Zoom 等 ❌——Muse 已扩展至小企业（[TechTarget](https://www.techtarget.com/ai/news/366651445/Meta-expands-Muse-to-small-businesses)）；个人版优先，团队/业务线暂不跟进
 - [ ] **H2 业务数据接入**：Instagram 专业账号/Facebook Pages/Meta 广告账户 → 营销/获客场景 ❌——同上
 - 来源：每日对标审查 2026-10-06（zhiding/TechTarget 报道）
+- **评估结论**：不跟进。单人场景无业务连接器/营销获客需求，且每类连接器需独立 OAuth 集成，成本与当前使用证据不匹配。重新评估条件：用户开始用 Notion/Stripe 等管理个人事务，或出现真实团队协作场景。
 
 ## G. 生态位（Muse 有而我们刻意不做/不同）
 
