@@ -50,6 +50,12 @@
 - [ ] **F5 提示词注入防御**：不可信内容标注 + 分类器检查 🟡（外部数据走 gate 判定；无专门分类器）
 - [ ] **F6 交易安全**：购物一次性卡号、结账页逐笔批准 ❌（远期，接真实交易时再说）
 
+## H. 小企业/团队扩展（2026-09-30 新发现）
+
+- [ ] **H1 业务连接器**：Shopify/Dropbox/Slack/Asana/Box/Canva/Figma/Notion/Stripe/Zoom 等 ❌——Muse 已扩展至小企业（[TechTarget](https://www.techtarget.com/ai/news/366651445/Meta-expands-Muse-to-small-businesses)）；个人版优先，团队/业务线暂不跟进
+- [ ] **H2 业务数据接入**：Instagram 专业账号/Facebook Pages/Meta 广告账户 → 营销/获客场景 ❌——同上
+- 来源：每日对标审查 2026-10-06（zhiding/TechTarget 报道）
+
 ## G. 生态位（Muse 有而我们刻意不做/不同）
 
 - 云端托管电脑（我们 = 本机宿主，隐私优先）
