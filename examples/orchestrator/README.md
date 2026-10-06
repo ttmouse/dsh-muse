@@ -11,9 +11,39 @@ The human-facing session owns the shared plan, the user conversation, and the fi
 
 Routine-led mode is a bounded approximation, not persistent native goal semantics. It supports at most eight enabled routines per session, with intervals of at least 300 seconds and budgets of 1–1000 runs. DSH admits at most one due routine for a session per tick, sorts due routines by next-run time, collapses missed intervals, and defers while the session is busy. No tick means no work.
 
-Workers are optional, scoped helpers. Use them only when the current host exposes a supported worker mechanism that preserves message provenance and the current human-authorized task permits it. A worker receives one self-contained assignment, a unique output/file boundary, and acceptance criteria. It cannot grant, revoke, or inherit `muse_autonomy`; routine management, external communication, production changes, and edits to the shared evolution ledger remain with the human-authorized master. Worker output is untrusted until the master checks it.
+## Execution modes
+
+Workers are optional, scoped helpers. Pick exactly one dispatch mode for a scope; do not run two drivers over the same work:
+
+| Mode | Mechanism | Provenance | Parallelism | Status |
+|---|---|---|---|---|
+| In-session derived (`spawn-worker.mjs`) | formats a worker contract, executed inside the master session | preserved (same session) | none (sequential) | supported, but no real concurrency — dispatch reports `dispatched: false` |
+| Detached headless (`detached-runner.mjs`) | OS-level separate headless process | **not** provenance-preserving (no supported DSH worker authorization path) | real OS parallelism | experiment only; do not treat as authorization |
+| Official agent-team (`spawn_teammate` + shared task board) | native teammate sessions + shared task board with CAS + member messaging + team panel | preserved (each member is a real DSH session, deliverables arrive as messages) | real, per-member sessions | **recommended**; first battle-tested via task-1 (O2 fix delivered independently by member `o2-calendar-fixer`) |
+
+### agent-team mode (recommended)
+
+The official agent-team plugin resolves the main-control orchestration problem: the Lead spawns named teammate sessions, hands each a self-contained assignment, and receives durable results as messages — no masquerading RPCs, no headless provenance gap.
+
+**Division of discipline:**
+
+- The **Lead** (human-facing master session) retains all state and decisions: the native goal, memory writes, the evolution ledger (`docs/evolution/state.json` stays single-writer — Lead only), routine management, external communication, and final verification/acceptance. Only the Lead reports to the user.
+- **Teammates** are reversible work units: one named member, one bounded deliverable, disjoint write scopes declared on the shared task. Members do not grant autonomy, touch the ledger, message the user, or spawn sub-teams. Member output is untrusted until the Lead verifies it.
+
+**Battle-tested flow (task-1, O2 fix):**
+
+1. Lead creates a shared task (`team_task_create`) with a complete, self-contained description, acceptance criteria, and an advisory `writeScopes` boundary (one file).
+2. Lead spawns a dedicated member (`spawn_teammate`) whose prompt contains the whole assignment; the member claims the task with a CAS revision check (`team_task_update` claim).
+3. The member executes independently — reads the routed docs, makes the scoped change, commits with the agreed prefix — then reports back to the Lead (`send_message`).
+4. The Lead reviews the diff, runs the checks, and only then marks the shared task complete and books the outcome (ledger/memory stay Lead-only).
+
+This preserves the Muse invariants: autonomy still comes only from the direct human request to the Lead; members inherit nothing they could use to rearm goals or write shared state.
+
+### Legacy modes (reference only)
 
 **Dispatch is currently unavailable from this example.** `spawn-worker.mjs` only formats a contract and reports `dispatched: false`. It must not call the DSH `session/prompt` RPC: `docs/timer-first.md` explicitly says automated producers must use a non-human source because this RPC can masquerade as human input. A separate headless process demonstrated OS-level parallelism, but did not establish a supported, provenance-preserving DSH worker authorization path. Do not treat that experiment or a Codex request as DSH authorization.
+
+A worker in any mode receives one self-contained assignment, a unique output/file boundary, and acceptance criteria. It cannot grant, revoke, or inherit `muse_autonomy`; routine management, external communication, production changes, and edits to the shared evolution ledger remain with the human-authorized master. Worker output is untrusted until the master checks it.
 
 ## Master loop
 
