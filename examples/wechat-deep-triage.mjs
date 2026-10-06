@@ -43,29 +43,42 @@ for (const s of privateChats) {
   try {
     const tl = reader('timeline', ['--talker', String(s.username), '--limit', String(msgs)])
     const msgsTl = tl?.data?.messages ?? tl?.messages ?? []
-    const lines = msgsTl.map(m => ({
-      me: Boolean(m.isMe ?? m.is_me),
-      text: String(m.text ?? m.content ?? m.type ?? '').slice(0, 160),
-    }))
-    threads.push({ name: s.display_name ?? s.username, user: s.username, lines })
+    const nowS = Date.now() / 1000
+    const lines = msgsTl.map(m => {
+      const ts = Number(m.create_time ?? m.time ?? m.createTime ?? 0)
+      return {
+        me: Boolean(m.from_me ?? m.isMe ?? m.is_me),
+        text: String(m.text ?? m.content ?? m.kind_name ?? '').slice(0, 160),
+        ageH: ts ? (nowS - ts) / 3600 : null,
+      }
+    })
+    // 时间维度：对方最后一条【文字】消息的未回复时长 = 紧急度信号
+    // （跳过 VoIP/图片/XML 等非文字记录——它们会覆盖真正的待回复文字）
+    const isContent = l => l.text && !l.text.startsWith('<') && !l.text.startsWith('[')
+    const lastFromOther = [...lines].reverse().find(l => !l.me && isContent(l))
+    const unansweredHours = lastFromOther?.ageH ?? null
+    threads.push({ name: s.display_name ?? s.username, user: s.username, lines, unansweredHours })
   } catch (error) {
     console.error(`deep-triage: ${s.username} timeline 失败: ${String(error).slice(0, 100)}`)
   }
 }
 
 // ---- 3. 跟进启发（确定性，不进 LLM）：对方最后一条是否含问句/等待/时限信号 ----
-const FOLLOWUP_CUES = /[？?]|等你|等回复|什么时候|帮忙|拜托|别忘了|deadline|截止|记得/i
+const FOLLOWUP_CUES = /[？?]|等你|等回复|什么时候|帮忙|拜托|别忘了|deadline|截止|记得|有空|沟通/i
 const followups = []
 console.log(`== 微信深度分诊（最近 ${threads.length} 个私聊 × ${msgs} 条）==`)
 for (const th of threads) {
   const last = th.lines.at(-1)
   const lastIsMine = last?.me === true
   const cue = last && !last.me && FOLLOWUP_CUES.test(last.text)
-  if (cue) {
-    followups.push({ name: th.name, last: last.text })
-    console.log(`  [需跟进] ${th.name}: ${last.text}`)
+  const waitH = (!last?.me && th.unansweredHours !== null) ? th.unansweredHours : null
+  if (cue || (waitH !== null && waitH >= 12)) {
+    followups.push({ name: th.name, last: last?.text ?? '', waitingH: waitH?.toFixed(0) })
+    const waitTag = waitH !== null ? `（对方已等 ${waitH.toFixed(0)}h）` : ''
+    console.log(`  [需跟进] ${th.name}: ${last?.text ?? ''} ${waitTag}`)
   } else {
-    console.log(`  [已闭环] ${th.name}: 最后一条是我方消息或无需行动`)
+    const who = last?.me ? '我' : '对方'
+    console.log(`  [已闭环] ${th.name}: 最后一条是${who}消息，无需行动`)
   }
 }
 console.log(`跟进项: ${followups.length}`)
