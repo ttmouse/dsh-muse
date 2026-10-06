@@ -282,8 +282,8 @@
       "id": "R-member-goal-mode",
       "candidate": "B06",
       "decision": "rejected",
-      "level": "platform",
-      "summary": "成员目标模式实测不可用：goal/muse_autonomy 为 top-level agent 专属（DSH 授权边界安全设计）；成员自主推进以任务指令驱动替代（实测有效：3 轮、37 链接零缺失）。可作为上游功能请求",
+      "level": "engineering",
+      "summary": "成员目标模式实测不可用：goal/muse_autonomy 为 top-level agent 专属（DSH 授权边界安全设计）；成员自主推进以任务指令驱动替代（实测有效：3 轮、37 链接零缺失）。可作为上游功能请求（级别注记：platform 边界发现，按合同枚举记 engineering）",
       "evidence": [
         "docs/evolution/rounds/2026-10-06-agent-team-retro.md"
       ]
