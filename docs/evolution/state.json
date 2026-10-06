@@ -297,6 +297,16 @@
       "evidence": [
         "docs/evolution/rounds/2026-10-06-agent-team-retro.md"
       ]
+    },
+    {
+      "id": "R-goal-pool",
+      "candidate": "B06",
+      "decision": "accepted",
+      "level": "engineering",
+      "summary": "目标池上线：池文件（queued 3）+ 单 armed 位轮转纪律（goal 子系统每会话单目标限制的应对）；池含 v0.1.0 发布/语料真实样本/生活类占位",
+      "evidence": [
+        "docs/evolution/rounds/2026-10-06-agent-team-retro.md"
+      ]
     }
   ]
 }
