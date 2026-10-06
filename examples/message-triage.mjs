@@ -22,6 +22,7 @@ if (hour < 8 || hour >= 23) process.exit(0)
 
 const A_CUES = /[？?]|等你回复|截止|需要你确认|需要你决定|尽快/i
 // 微信渠道额外要求：最近 24h 内 + 最后发送者非本人（未回复）
+import { mkdirSync as _mkdir } from 'node:fs'
 const followups = []
 
 // ---- 钉钉 @我 ----
@@ -55,6 +56,18 @@ try {
 
 if (followups.length === 0) process.exit(0) // ← 静默：零对话接触
 
+// ---- 去重：同一批次（内容哈希相同）24h 内不重复注入 ----
+import { createHash } from 'node:crypto'
+const batchHash = createHash('sha256').update(followups.join('|')).digest('hex').slice(0, 16)
+const statePath = join(projectDir, '.triage-state.json')
+let lastBatch = { hash: '', at: 0 }
+try { lastBatch = JSON.parse(readFileSync(statePath, 'utf8')) } catch {}
+if (lastBatch.hash === batchHash && Date.now() - lastBatch.at < 24 * 3600 * 1000) {
+  console.log('triage: 同批次 24h 内已注入，跳过')
+  process.exit(0)
+}
+lastBatch = { hash: batchHash, at: Date.now() }
+
 // ---- 有 A 类 → 注入主会话 ----
 const { callRpc } = await import(join(projectDir, 'examples', 'lib', 'dsh-client.mjs'))
 const sessionId = process.env.MUSE_SESSION_ID ?? SESSION_ID
@@ -65,6 +78,7 @@ try {
     sessionId, mode: 'queue',
     content: [{ type: 'text', text: `[muse-triage] ${followups.length} 项需要你关注：\n${followups.map(f => '• ' + f).join('\n')}` }],
   })
+  writeFileSync(statePath, JSON.stringify(lastBatch))
   appendFileSync(join(projectDir, 'demo-journal.md'),
     `- [${new Date().toISOString().slice(0, 16).replace('T', ' ')} +08:00] 消息分诊（脚本侧）：A 类 ${followups.length} 项已注入\n`)
   console.log(`triage: 注入 ${followups.length} 项`)
