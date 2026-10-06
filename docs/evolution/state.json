@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-10-05",
+  "updated": "2026-10-07",
   "stage": "S0",
   "runtime_note": "账本不是授权或调度；B01 的 E1 任务未触发，24 小时观察窗未满。DSH 主会话的直接人类触发与评价仍待补。",
   "next": "B01",
@@ -306,6 +306,16 @@
       "summary": "目标池上线：池文件（queued 3）+ 单 armed 位轮转纪律（goal 子系统每会话单目标限制的应对）；池含 v0.1.0 发布/语料真实样本/生活类占位",
       "evidence": [
         "docs/evolution/rounds/2026-10-06-agent-team-retro.md"
+      ]
+    },
+    {
+      "id": "R-triage-seenset",
+      "candidate": "B01",
+      "decision": "accepted",
+      "level": "engineering",
+      "summary": "分诊去重从容量-1哈希升级为持久化已见集合（TTL 24h+cap50），交替批次不再二次注入；顺带修复 8b596d6 造成的 timers 测试隔离破坏（--rules 指向空文件）。回归用例证明旧缝隙，8/8+6/6 全绿",
+      "evidence": [
+        "docs/evolution/rounds/2026-10-07-triage-seen-set.md"
       ]
     }
   ]
