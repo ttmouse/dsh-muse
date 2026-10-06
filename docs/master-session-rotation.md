@@ -11,7 +11,7 @@
 | 目标池（4 个长期目标） | ~/.dsh/muse/goal-pool.json | 随时可读 |
 | 关键人注册表 | ~/.dsh/muse/key-people.json + 记忆 | 已入记忆 |
 | Muse 身份 | ~/.dsh/muse/identity.json | 自动注入 |
-| launchd 静默层（gate/reflect/分诊/复盘触发） | ~/Library/LaunchAgents/com.dsh-muse.* | 与对话无关，继续跑 |
+| launchd 静默层（gate/reflect/分诊/复盘触发） | ~/Library/LaunchAgents/com.dsh-muse.* | 与对话无关，继续跑（例外见下：分诊/ops-warden 的会话指向需按 §3 重指） |
 
 ## 需要在新对话重建（约 5 分钟）
 
@@ -24,9 +24,12 @@ keeper 会武装目标；把 goal-pool.json 的 armed 目标贴给它确认即�
 - **20:35 每日项目总结**：三源管线（node examples/daily-summary-sources.mjs + ec review + 记忆增量 → ev_add_md 写入当日笔记）
 - **周日 20:10 每周摘要**：node examples/weekly-digest.mjs --note
 
-### 3. 更新 ops-warden 触发器指向（1 行）
-examples/ops-warden-trigger.plist 的 MUSE_SESSION_ID 改为新会话 id，然后：
+### 3. 更新触发器指向（2 个 plist，各 1 行）
+- examples/ops-warden-trigger.plist 的 MUSE_SESSION_ID 改为新会话 id，然后：
 `launchctl bootout gui/$(id -u)/com.dsh-muse.ops-warden-trigger; launchctl bootstrap gui/$(id -u) ~/Projects/dsh-muse/examples/ops-warden-trigger.plist`
+- examples/message-triage.plist 的 MUSE_SESSION_ID 同样改新 id 并重载：
+`launchctl bootout gui/$(id -u)/com.dsh-muse.message-triage; launchctl bootstrap gui/$(id -u) ~/Projects/dsh-muse/examples/message-triage.plist`
+（漏改则 A 类注入打向旧会话，旧会话关闭后静默失败；2026-10-07 分诊复核补记。另：StartCalendarInterval 注册会失效——重载即修，2026-10-07 实证：分诊任务加载后 runs=0 三次日历点未触发，bootout+bootstrap 后注册恢复，另用临时探针证明当日历投递本身正常。）
 
 ### 4. 重生 ops-warden 成员（1 句话）
 对新 Muse 说：「重建 ops-warden 常驻运维成员」（charter 正本：~/.dsh/muse/ops-warden-charter.md，spawn prompt 直接用其正文；2026-10-07 修正——原指向 retro 文档「成员模板节」不存在）。
