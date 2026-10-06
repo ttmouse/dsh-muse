@@ -133,3 +133,4 @@
 - [2026-10-06 17:30 +08:00] 关键人扩容（queued 1 ✓）：从 human/contacts 提取协作密度候选——怀斌（仁恒决策层，候选待确认）+ Wendy 周/天明（观察名单）入 key-people.json candidates 节；wxid 出现在微信会话时自动映射。已确认 4 人（老婆/青山/菜花/轮子）不变。
 - [2026-10-06 17:12 +08:00] 桌面端 muse 插件「异常」修复：根因是包从 deepseek-harness 迁移到 dsh-muse 仓库后，desktop profile 的 link 指向旧路径（packages/muse/muse 已消失）。修复：package.json 两个 link 改指 /Users/douba/Projects/dsh-muse/muse|tool-muse（备份 .bak-20261006-muse-link-fix）+ node_modules 符号链接重指，require 解析验证 ✓。需桌面 App 重启生效。教训：包迁移时必须同步更新所有 profile（desktop/web）的 link 引用。
 - [2026-10-06 17:26 +08:00] 桌面端 muse 插件修复确认中：用户面板开关切换后无报错（bundle 重解析成功信号）。最终验证 = 桌面端新会话确认 muse 工具可用。根因（包迁移后 profile link 失效）与修复（link 重指+备份）已固化在 journal 与 .bak。
+- [2026-10-06 21:40 +08:00] 每日总结：已写入笔记（4 节，首跑三源版；git 提交 57 个/journal 36 条/记忆增量 21 条）
