@@ -57,3 +57,4 @@
 ## 日常复盘记录
 
 - [2026-10-06 16:25 +08:00] ops-warden 首次日常复盘：launchd 四任务（gate/reflect/message-triage/memory-maintenance）exit 0 全部在册；patrol 约 30 分钟一拍持续运行（最近 2026-10-06T16:01+08），24h 内 1 次命中（07:31）其余 0 命中，无异常。gate/reflect 决策日志停留在 10-05 凌晨（demo 流无新触发），属预期静默非失效。
+- [2026-10-06 21:35 +08:00] 晚间机制复盘：①节奏——patrol 30 分钟节拍健康（最近 21:20+08），launchd 五任务全 exit 0（含新增 ops-warden-trigger）；memory-maintenance 每周日 4:00 尚未到首次触发，正常。②质量——白班成员复核抓出 triage 四 bug（0a85460）、桌面 muse link 修复、规则门禁/关键人扩容/目标池上线按计划推进，无返工。③停滞——gate/reflect demo 决策日志仍停在 10-04（无触发静默，预期）；patrol 24h 命中 1 次，无漂移。④异常——「triage 重复注入」lesson 在项目记忆被重复追加 4 次（08:26-09:26 复现计数递增），属记忆卫生问题，已合并为一条（脚本侧去重已修，gate 端持久化已见集合列为后续加固方向）。无 A 类，未报 lead。
