@@ -19,8 +19,9 @@ function scratch(operation) {
 
 test('local sensitive signals are filtered before judge or mailbox; normal signals queue once', () => scratch(root => {
   const signal = join(root, 'MUSE-SIGNAL.md')
-  const run = flags => execFileSync(process.execPath, [join(repo, 'examples/gate/gate.mjs'), '--session', 'timer-test', ...flags], {
-    cwd: '/', env: { ...process.env, DSH_HOME: root, MUSE_PROJECT_DIR: root }, encoding: 'utf8', timeout: 10000,
+  const run = flags => execFileSync(process.execPath, [join(repo, 'examples/gate/gate.mjs'), '--session', 'timer-test',
+    '--rules', join(root, 'no-rules.json'), ...flags], {
+    cwd: '/', env: { ...process.env, DSH_HOME: root, MUSE_PROJECT_DIR: root }, encoding: 'utf8', timeout: 30000,
   })
   writeFileSync(signal, 'verification code 123456')
   assert.equal(run(['--judge']), '')

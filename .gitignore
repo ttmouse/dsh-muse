@@ -11,4 +11,5 @@ examples/gate/.gate-state/
 examples/reflect/reflect-decisions.log
 reflect-decisions.log
 examples/.gate-state/
+.triage-state.json
 *.log

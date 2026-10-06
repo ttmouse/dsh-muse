@@ -10,11 +10,13 @@
  * A 类线索（确定性）: 问句/等你/有空/帮忙/拜托/别忘了/deadline/截止/记得/沟通
  */
 import { execFileSync } from 'node:child_process'
-import { appendFileSync, readFileSync, writeFileSync } from 'node:fs'
+import { appendFileSync, readFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { join } from 'node:path'
+import { seenRecently, markSeen } from './lib/seen-set.mjs'
 
 const HOME = process.env.HOME ?? homedir()
-const projectDir = '/Users/douba/Projects/dsh-muse'
+const projectDir = process.env.MUSE_PROJECT_DIR ?? '/Users/douba/Projects/dsh-muse'
 const SESSION_ID = process.env.MUSE_SESSION_ID ?? ''
 const URL = process.env.MUSE_URL ?? 'http://127.0.0.1:19387'
 const hour = new Date().getHours()
@@ -59,17 +61,14 @@ try {
 
 if (followups.length === 0) process.exit(0) // ← 静默：零对话接触
 
-// ---- 去重：同一批次（内容哈希相同）24h 内不重复注入 ----
-import { createHash } from 'node:crypto'
+// ---- 去重：内容寻址持久化已见集合（容量 50）——同批次 24h 内不重复注入，交替批次也不漏 ----
 const batchHash = createHash('sha256').update(followups.join('|')).digest('hex').slice(0, 16)
 const statePath = join(projectDir, '.triage-state.json')
-let lastBatch = { hash: '', at: 0 }
-try { lastBatch = JSON.parse(readFileSync(statePath, 'utf8')) } catch {}
-if (lastBatch.hash === batchHash && Date.now() - lastBatch.at < 24 * 3600 * 1000) {
+const SEEN_TTL = 24 * 3600 * 1000
+if (seenRecently(statePath, batchHash, SEEN_TTL)) {
   console.log('triage: 同批次 24h 内已注入，跳过')
   process.exit(0)
 }
-lastBatch = { hash: batchHash, at: Date.now() }
 
 // ---- 有 A 类 → 注入主会话 ----
 const { callRpc } = await import(join(projectDir, 'examples', 'lib', 'dsh-client.mjs'))
@@ -81,7 +80,7 @@ try {
     sessionId, mode: 'queue',
     content: [{ type: 'text', text: `[muse-triage] ${followups.length} 项需要你关注：\n${followups.map(f => '• ' + f).join('\n')}` }],
   })
-  writeFileSync(statePath, JSON.stringify(lastBatch))
+  markSeen(statePath, batchHash, SEEN_TTL)
   appendFileSync(join(projectDir, 'demo-journal.md'),
     `- [${new Date().toISOString().slice(0, 16).replace('T', ' ')} +08:00] 消息分诊（脚本侧）：A 类 ${followups.length} 项已注入\n`)
   console.log(`triage: 注入 ${followups.length} 项`)
