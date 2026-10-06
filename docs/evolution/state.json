@@ -287,6 +287,16 @@
       "evidence": [
         "docs/evolution/rounds/2026-10-06-agent-team-retro.md"
       ]
+    },
+    {
+      "id": "R-member-routine-test",
+      "candidate": "B06",
+      "decision": "rejected",
+      "level": "engineering",
+      "summary": "成员侧 muse_routine/muse_status 实测未注入（工具面缺失，top-level 专属）；多长期目标定案走「主控目标池+成员执行」而非外部文档",
+      "evidence": [
+        "docs/evolution/rounds/2026-10-06-agent-team-retro.md"
+      ]
     }
   ]
 }
