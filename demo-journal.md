@@ -157,3 +157,4 @@
 - [2026-10-07 12:00 +08:00] 日历 A 类注入实战验证 ✅（queued 1 项闭环）：双独立调查交叉确认——真实事件→gate 感知→judge SAY→注入主会话全链路通；活跃去重状态含全部 4 条测试/真实事件。误导残留 examples/gate/gate-decisions.log（10-05 旧版）已删除，活跃日志为仓库根 gate-decisions.log。附带：gate 手动运行默认加载 local-rules.json 修复入库（8b596d6/1d2fbad）。
 - [2026-10-07 03:55 +08:00] 每日对标审查（主控提前执行，原调度 9:30 仍会触发）：抓到重磅——Muse person pages 机制被系统提示词提取暴露（Facts/History/Relationship/Open Threads/Strengthening 段落+每小时更新）；清单新增 I 类（I1/I2 待建、I3/I4 我们已有或更优）；Today.app 1.21.3 无变化
 - [2026-10-07 04:02 +08:00] 自我纠错：上条 journal 时间戳误写（手写 12:10，实际 03:55）并误标「9:30 投递未现」（当时才凌晨 4 点，9:30 尚未发生）。教训：journal 时间戳一律用 date 命令生成。
+- [2026-10-07 04:15 +08:00] 用户提出主对话 token 累积问题（清理无效）→ 确认定期换主对话是正解，迁移手册已写（docs/master-session-rotation.md）：记忆/目标池/关键人/launchd 自动迁移，需重建 3 调度+ops-warden 指向，约 5 分钟。
