@@ -317,6 +317,16 @@
       "evidence": [
         "docs/evolution/rounds/2026-10-07-triage-seen-set.md"
       ]
+    },
+    {
+      "id": "R-master-rotation",
+      "candidate": "B06",
+      "decision": "accepted",
+      "level": "engineering",
+      "summary": "主对话轮换首日：rotate-master 补卸任调度清理（schedule/delete RPC 源码+探针+真删三重实测）+ --dry-run + 简报补成员重生指引 + charter 正本落盘；9:05 真实触发路由链闭环、08:00 分诊三发全中；一次幂等失效事故（state.date 被 UTC 日期污染）完整回滚并固化教训",
+      "evidence": [
+        "docs/evolution/rounds/2026-10-07-master-rotation.md"
+      ]
     }
   ]
 }
