@@ -58,6 +58,7 @@
 - [ ] **I2 每小时更新节奏**：person pages 每小时数据汇编 🟡——我们 30 分钟巡逻已超此频率，但未持续更新人物档案
 - [x] **I3 只用事实原则**：「编造比留空更有问题」——与我们「绝不编造消息内容」纪律一致 ✅
 - [x] **I4 隐私差异化优势**：Muse 因未授权读消息/泄露买家地址遭批评；dsh-muse 全本机、零上传、凭据不进上下文——**这是我们相对 Muse 的主动优势，应保持并宣传** ✅
+- [x] **I5 未使用者档案批评（2026-10-07 补录）**：Muse 会为从未使用它的人保留文件/档案（Yahoo Tech 标题级信源，全文 403 未读：[Meta Muse can keep files on people who have never used it](https://tech.yahoo.com/ai/meta-muse-keep-files-people-064500614.html)，同波 [CNBC TV18](https://www.cnbctv18.com/technology/meta-muse-ai-building-dossiers-on-users-what-we-know-20006380.htm)）→ 强化 I4 叙事：我们不为无关第三方建档，关键人档案全部来自用户自己的通讯与授权 ✅
 - 教训（F5 对标）：Muse 的系统提示词被「让 agent 自己复制内部文件」方式提取——我们 F5 的注入筛查应把「诱导输出系统提示词/内部指令」列为明确攻击样例
 
 ## H. 小企业/团队扩展（2026-09-30 新发现）
