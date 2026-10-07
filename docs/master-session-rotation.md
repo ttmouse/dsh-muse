@@ -11,7 +11,7 @@
 | 目标池（4 个长期目标） | ~/.dsh/muse/goal-pool.json | 随时可读 |
 | 关键人注册表 | ~/.dsh/muse/key-people.json + 记忆 | 已入记忆 |
 | Muse 身份 | ~/.dsh/muse/identity.json | 自动注入 |
-| launchd 静默层（gate/reflect/分诊/复盘触发） | ~/Library/LaunchAgents/com.dsh-muse.* | 与对话无关，继续跑（例外见下：分诊/ops-warden 的会话指向需按 §3 重指） |
+| launchd 静默层（gate/reflect/分诊/巡查/复盘触发） | 正本在本仓库 examples/*.plist（gate / ops-warden-trigger / message-triage / stall-patrol，rotate-master 每日 08:00 自动重指四 plist）；reflect 与 memory-maintenance 仍在 ~/Library/LaunchAgents | 与对话无关，继续跑 |
 
 ## 需要在新对话重建（约 5 分钟）
 
@@ -24,13 +24,15 @@ keeper 会武装目标；把 goal-pool.json 的 armed 目标贴给它确认即�
 - **20:35 每日项目总结**：三源管线（node examples/daily-summary-sources.mjs + ec review + 记忆增量 → ev_add_md 写入当日笔记）
 - **周日 20:10 每周摘要**：node examples/weekly-digest.mjs --note
 
-### 3. 更新触发器指向（3 个 plist，各 1 行）
+### 3. 更新触发器指向（4 个 plist，各 1 行；rotate-master 每日 08:00 已自动覆盖，手动轮换时才需照做）
 - examples/ops-warden-trigger.plist 的 MUSE_SESSION_ID 改为新会话 id，然后：
 `launchctl bootout gui/$(id -u)/com.dsh-muse.ops-warden-trigger; launchctl bootstrap gui/$(id -u) ~/Projects/dsh-muse/examples/ops-warden-trigger.plist`
 - examples/message-triage.plist 的 MUSE_SESSION_ID 同样改新 id 并重载：
 `launchctl bootout gui/$(id -u)/com.dsh-muse.message-triage; launchctl bootstrap gui/$(id -u) ~/Projects/dsh-muse/examples/message-triage.plist`
 - examples/stall-patrol.plist 同样改新 id 并重载（断线对话巡查，每小时一拍；rotate-master 已纳入重指清单，2026-10-07 上线）：
 `launchctl bootout gui/$(id -u)/com.dsh-muse.stall-patrol; launchctl bootstrap gui/$(id -u) ~/Projects/dsh-muse/examples/stall-patrol.plist`
+- examples/gate.plist 的 --session 参数同样改新 id 并重载（gate 信号注入主会话；2026-10-07 入库并纳入轮换清单——此前装在 ~/Library/LaunchAgents 的旧正本跨两次轮换漏指，日历类信号投进无人读的旧会话，实证见 retro 日常复盘记录 2026-10-07 21:3x 条）：
+`launchctl bootout gui/$(id -u)/com.dsh-muse.gate; launchctl bootstrap gui/$(id -u) ~/Projects/dsh-muse/examples/gate.plist`
 （漏改则 A 类注入打向旧会话，旧会话关闭后静默失败；2026-10-07 分诊复核补记。另：StartCalendarInterval 注册会失效——重载即修，2026-10-07 实证：分诊任务加载后 runs=0 三次日历点未触发，bootout+bootstrap 后注册恢复，另用临时探针证明当日历投递本身正常。）
 
 ### 4. 重生 ops-warden 成员（1 句话）
