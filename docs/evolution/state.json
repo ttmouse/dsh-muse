@@ -327,6 +327,16 @@
       "evidence": [
         "docs/evolution/rounds/2026-10-07-master-rotation.md"
       ]
+    },
+    {
+      "id": "R-stall-patrol",
+      "candidate": "B06",
+      "decision": "accepted",
+      "level": "engineering",
+      "summary": "主控巡查上线：每小时普查全部会话（session/list 分页 744），四类断线信号+同 goal 去重 canonical/duplicate；回归测试抓出去重地图不跟手实 bug 并修复（16/16）；接手断线会话遗留毒丸修复入库（muse 33/33）；launchd 接入+轮换重指清单 2→3",
+      "evidence": [
+        "docs/evolution/rounds/2026-10-07-stall-patrol.md"
+      ]
     }
   ]
 }

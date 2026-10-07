@@ -21,6 +21,7 @@
  */
 import { callRpc } from './lib/dsh-client.mjs'
 import { seenRecently, markSeen } from './lib/seen-set.mjs'
+import { classifySessions } from './lib/stall-classify.mjs'
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
@@ -30,7 +31,6 @@ const HOME = process.env.HOME ?? homedir()
 const dryRun = process.argv.includes('--dry-run')
 const IDLE_MIN = Number(process.env.STALL_IDLE_MIN ?? 30)
 const WINDOW_H = Number(process.env.STALL_WINDOW_H ?? 24)
-const SKIP_TITLE = /已退役|已废弃|已归档/
 
 // 夜间静默（本地时区 0-8 点跳过）；--force 或 STALL_NO_NIGHT_SKIP=1 可越过
 if (!dryRun && !process.argv.includes('--force') && process.env.STALL_NO_NIGHT_SKIP !== '1') {
@@ -52,43 +52,7 @@ do {
   if (++pages > 50) break
 } while (cursor)
 
-const now = Date.now()
-const v = s => s.projections?.values ?? {}
-const candidates = []
-for (const s of all) {
-  if (s.blank || s.running) continue
-  if (!masterId || s.sessionId === masterId) continue
-  if (SKIP_TITLE.test(v(s).title ?? '')) continue
-  const idleMin = Math.round((now - s.updatedAt) / 6e4)
-  if (idleMin < IDLE_MIN || idleMin > WINDOW_H * 60) continue
-  const rawGoal = v(s).goal
-  const g = rawGoal?.goal ?? rawGoal // 投影里 goal 为双层嵌套 {goal:{id,phase,...}, roundsStarted}
-  const openTodos = (v(s).todos ?? []).filter(t => t.status !== 'completed')
-  const queued = ['next-turn', 'next-step'].some(k => (v(s).inbox?.[k] ?? []).length > 0)
-  const kind = g?.phase
-    ? (g.phase === 'blocked' ? 'blocked-goal' : g.phase === 'active' ? 'stalled-goal' : null)
-    : (queued ? 'stalled-inbox' : openTodos.length ? 'stalled-todos' : null)
-  if (!kind) continue
-  candidates.push({
-    sessionId: s.sessionId, kind, idleMin, cwd: s.cwd ?? '',
-    title: (v(s).title ?? '(无标题)').slice(0, 40),
-    goalId: g?.id ?? '', goalRev: g?.revision ?? 0,
-    openTodos: openTodos.length,
-  })
-}
-
-// ---- 同 goal 去重：最新者为 canonical，其余 duplicate ----
-const byGoal = new Map()
-for (const c of candidates.filter(c => c.goalId)) {
-  const prev = byGoal.get(c.goalId)
-  if (!prev) { byGoal.set(c.goalId, c); c.canonical = true }
-  else {
-    const newer = c.idleMin < prev.idleMin
-    ;(newer ? c : prev).canonical = true
-    ;(newer ? prev : c).canonical = false
-    ;(newer ? prev : c).kind = 'duplicate-goal'
-  }
-}
+const candidates = classifySessions(all, { masterId, now: Date.now(), idleMinMin: IDLE_MIN, windowH: WINDOW_H })
 
 if (dryRun) {
   console.log(`stall-patrol(dry-run): 普查 ${all.length} 会话，候选 ${candidates.length}`)
