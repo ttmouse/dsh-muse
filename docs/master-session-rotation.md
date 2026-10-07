@@ -19,10 +19,11 @@
 新对话里说：**「继续」+ 简述目标**（例如「继续打磨 dsh-muse，目标池在 ~/.dsh/muse/goal-pool.json」）。
 keeper 会武装目标；把 goal-pool.json 的 armed 目标贴给它确认即可。
 
-### 2. 重建 3 个每日调度（各 1 次 schedule_create）
+### 2. 重建 4 个调度（各 1 次 schedule_create）
 - **9:30 每日对标审查**：web_search Muse 新细节 + Today.app 版本监测 + 清单核对（prompt 见旧对话或按 docs/capability-checklist.md 语义重建）
 - **20:35 每日项目总结**：三源管线（node examples/daily-summary-sources.mjs + ec review + 记忆增量 → ev_add_md 写入当日笔记）
 - **周日 20:10 每周摘要**：node examples/weekly-digest.mjs --note
+- **周日 21:00 每周元复盘·元认知层**：对本周复盘体系本身做复盘（复盘质量/漏报/目标差异/自动化清单增删改/复盘逻辑五问；每周恰好一张卡，含自指降频条款）——prompt 正本见 docs/master-session-rotation.md 附录 D（2026-10-07 上线）
 
 ### 3. 更新触发器指向（4 个 plist，各 1 行；rotate-master 每日 08:00 已自动覆盖，手动轮换时才需照做）
 - examples/ops-warden-trigger.plist 的 MUSE_SESSION_ID 改为新会话 id，然后：
@@ -80,8 +81,35 @@ keeper 会武装目标；把 goal-pool.json 的 armed 目标贴给它确认即�
 有需用户关注的周度发现一句话汇报，否则静默。
 ```
 
+### D. 每周元复盘·元认知层（cron: 0 21 * * 0，周日，2026-10-07 上线）
+```
+【每周元复盘·元认知层】对本周的复盘体系本身做复盘（周日 21:00，每周恰好一张卡）。
+
+一、输入（全部要读，给证据不给印象）：
+1) docs/evolution/rounds/2026-10-06-agent-team-retro.md「日常复盘记录」本周条目
+2) demo-journal.md 本周条目
+3) docs/evolution/state.json——candidates 健康：waiting 老化多久？accepted 缺用户评价的有哪些？
+4) ~/.dsh/muse/goal-pool.json——armed 推进 vs「这就是 Muse」体感目标的差距；queued 目标饥饿了多久
+5) 本周用户原话反馈（journal/聊天里的「不对劲」类信号——最高价值的迭代信号）
+
+二、五问：
+1. 复盘质量：本周各复盘发现了什么真问题？有没有「说修好了实际没修好」或验证盲区（先例：10-07 gate 注入漂移，「端到端验证✅」实为止步受理层）？
+2. 漏报：本周用户自己发现了什么而复盘没发现（先例：卡片刷屏由用户截图发现）？为什么漏？复盘的维度/频率/深度怎么补？
+3. 目标差异：armed 推进对齐体感目标吗？queued 饥饿目标该轮转、砍掉还是拆分？
+4. 自动化清单增删改：7 个 launchd + 4 个 schedule，每个的实际产出被谁消费？零消费的降频或移除；仍在手动做的该自动化吗？
+5. 复盘逻辑本身要不要改？
+
+三、产出：
+1. 追加 docs/evolution/rounds/ 下当周 meta-retro 周文档
+2. 小问题直接修+commit；大的优化点入 state.json candidates
+3. 给用户恰好一张卡：本周元发现 top3 + 需要拍板的事项；确实无实质发现则一张说明卡写明「本周复盘体系无盲区证据」
+4. 自指条款：若连续两周本任务产不出有价值发现，在卡上自我提议降频为双周或取消
+
+不改任何每日节拍；不创建新自动化（除非五问结论支持）。
+```
+
 ### 切换顺序（避免双跑或空窗）
-1. 新对话：照抄 A/B/C 创建 3 个调度
+1. 新对话：照抄 A/B/C/D 创建 4 个调度
 2. 新对话：更新 examples/ops-warden-trigger.plist 的 MUSE_SESSION_ID → 新会话 id，bootstrap 重载
-3. 旧对话：让旧 Muse 执行 schedule_delete 删除 A/B/C 三个旧调度（schedule_list 拿 id）
+3. 旧对话：让旧 Muse 执行 schedule_delete 删除旧调度（schedule_list 拿 id）
 4. 验证：次日 9:05/9:30/20:35 的卡片出现在新对话

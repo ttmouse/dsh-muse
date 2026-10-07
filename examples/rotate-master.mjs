@@ -85,7 +85,7 @@ const brief = `【晨间交接——你是今天的主控 Muse】（${today}）
 新的一天，主对话已为你备好。上下文要点：
 1. 目标池（~/.dsh/muse/goal-pool.json，用户全部长期目标）：armed = ${pool.armed?.goal ?? 'dsh-muse 打磨'}；queued ${pool.queued?.length ?? 0} 个见文件
 2. 关键人（老婆/青山/菜花/轮子，注册表 ~/.dsh/muse/key-people.json）与全部纪律已在你收到的记忆注入中
-3. 开工动作（按 docs/master-session-rotation.md）：用 schedule_create 重建 3 个每日调度（9:30 对标 / 20:35 总结，prompt 在手册附录）；按 ~/.dsh/muse/ops-warden-charter.md 用 spawn_teammate 重生 ops-warden 成员（ops-warden-trigger 的 plist 已重指本会话，9:05 路由到无成员会话会空转）；goal 挂载等用户首条消息授权
+3. 开工动作（按 docs/master-session-rotation.md）：用 schedule_create 重建 4 个调度（9:30 对标 / 20:35 总结 / 周日 20:10 周报 / 周日 21:00 元复盘，prompt 在手册附录 A-D）；按 ~/.dsh/muse/ops-warden-charter.md 用 spawn_teammate 重生 ops-warden 成员（ops-warden-trigger 的 plist 已重指本会话，9:05 路由到无成员会话会空转）；goal 挂载等用户首条消息授权，无事时按轮次纪律置 blocked 进守望
 4. 用户偏好：中文、简洁、静默=主对话零消息、白天自测可围观、诚实不编造
 5. 前一天的工作档案：demo-journal.md 与 docs/evolution/（21 轮账本）
 
