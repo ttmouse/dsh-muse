@@ -24,11 +24,13 @@ keeper 会武装目标；把 goal-pool.json 的 armed 目标贴给它确认即�
 - **20:35 每日项目总结**：三源管线（node examples/daily-summary-sources.mjs + ec review + 记忆增量 → ev_add_md 写入当日笔记）
 - **周日 20:10 每周摘要**：node examples/weekly-digest.mjs --note
 
-### 3. 更新触发器指向（2 个 plist，各 1 行）
+### 3. 更新触发器指向（3 个 plist，各 1 行）
 - examples/ops-warden-trigger.plist 的 MUSE_SESSION_ID 改为新会话 id，然后：
 `launchctl bootout gui/$(id -u)/com.dsh-muse.ops-warden-trigger; launchctl bootstrap gui/$(id -u) ~/Projects/dsh-muse/examples/ops-warden-trigger.plist`
 - examples/message-triage.plist 的 MUSE_SESSION_ID 同样改新 id 并重载：
 `launchctl bootout gui/$(id -u)/com.dsh-muse.message-triage; launchctl bootstrap gui/$(id -u) ~/Projects/dsh-muse/examples/message-triage.plist`
+- examples/stall-patrol.plist 同样改新 id 并重载（断线对话巡查，每小时一拍；rotate-master 已纳入重指清单，2026-10-07 上线）：
+`launchctl bootout gui/$(id -u)/com.dsh-muse.stall-patrol; launchctl bootstrap gui/$(id -u) ~/Projects/dsh-muse/examples/stall-patrol.plist`
 （漏改则 A 类注入打向旧会话，旧会话关闭后静默失败；2026-10-07 分诊复核补记。另：StartCalendarInterval 注册会失效——重载即修，2026-10-07 实证：分诊任务加载后 runs=0 三次日历点未触发，bootout+bootstrap 后注册恢复，另用临时探针证明当日历投递本身正常。）
 
 ### 4. 重生 ops-warden 成员（1 句话）

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.dsh-muse.stall-patrol</string>
+  <key>ProgramArguments</key><array>
+    <string>/opt/homebrew/bin/node</string>
+    <string>/Users/douba/Projects/dsh-muse/examples/stall-patrol.mjs</string>
+  </array>
+  <key>WorkingDirectory</key><string>/Users/douba/Projects/dsh-muse</string>
+  <key>EnvironmentVariables</key><dict>
+    <key>MUSE_SESSION_ID</key><string>session-da8579be-bcb4-44b9-93a8-7fd618b01b0f</string>
+    <key>MUSE_URL</key><string>http://127.0.0.1:19387</string>
+  </dict>
+  <key>StartInterval</key><integer>3600</integer>
+  <key>RunAtLoad</key><false/>
+  <key>StandardOutPath</key><string>/tmp/dsh-muse-stall-patrol.log</string>
+  <key>StandardErrorPath</key><string>/tmp/dsh-muse-stall-patrol.log</string>
+</dict></plist>

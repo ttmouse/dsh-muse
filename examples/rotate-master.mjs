@@ -43,9 +43,21 @@ if (process.argv.includes('--dry-run')) {
 if (state.date === today) { console.log('rotate: 今日已轮换，跳过'); process.exit(0) }
 
 // ---- 1. 创建新主会话 ----
+// 标题标记：侧边栏一眼可辨主控/退役（2026-10-07 用户反馈分不清哪个是主控对话）
+async function markTitle(sessionId, prefix, fallback) {
+  try {
+    const list = await callRpc(URL_, 'session/list', {})
+    const arr = Array.isArray(list) ? list : (list?.sessions ?? [])
+    const old = arr.find(s => s.sessionId === sessionId)?.projections?.values?.title ?? ''
+    const base = old.replace(/^【[^】]*】/, '') || fallback
+    await callRpc(URL_, 'session/rename', { sessionId, title: prefix + base })
+    console.log(`rotate: 标题标记 → 「${prefix}${base}」`)
+  } catch (e) { console.error('rotate: 标题标记失败（不阻断）:', String(e).slice(0, 120)) }
+}
 const created = await callRpc(URL_, 'session/create', { cwd: projectDir })
 const newId = created.sessionId
 console.log('rotate: 新会话', newId)
+await markTitle(newId, '【主控】', 'Muse 今日主控对话')
 
 // ---- 2. 清理卸任会话的私有调度（防跨日双跑；2026-10-07 交接遗留修复）----
 // 卸任主控的 3 条每日调度若不删，与新会话重建的调度 9:30 起双跑。
@@ -58,6 +70,7 @@ if (outgoing && outgoing !== newId) {
       console.log(`rotate: 卸任调度 ${r?.deleted ? '已删' : `跳过(${r?.code ?? 'unknown'})`} ${s.id}${s.title ? ` [${s.title}]` : ''}`)
     }
     console.log(`rotate: 卸任会话 ${outgoing} 调度清理完成（${Array.isArray(items) ? items.length : 0} 条）`)
+    await markTitle(outgoing, '【已退役·前主控】', 'Muse 旧主控')
   } catch (e) {
     // 清理失败不阻断轮换：宁可单日双跑（可人工删），不可全天无主控
     console.error('rotate: 卸任调度清理失败（不阻断轮换）:', String(e).slice(0, 160))
@@ -83,8 +96,8 @@ await callRpc(URL_, 'session/prompt', {
   content: [{ type: 'text', text: brief }],
 })
 
-// ---- 5. 重指两个 plist ----
-for (const name of ['ops-warden-trigger', 'message-triage']) {
+// ---- 5. 重指三个 plist ----
+for (const name of ['ops-warden-trigger', 'message-triage', 'stall-patrol']) {
   const plist = join(projectDir, 'examples', `${name}.plist`)
   if (!existsSync(plist)) continue
   try {
