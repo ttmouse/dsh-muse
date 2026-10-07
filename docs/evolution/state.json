@@ -104,10 +104,7 @@
       "hypothesis": "在 key-people.json 增加结构化 open_threads（事项+起始时间+最后动作+到期语义），每日节拍对超期未完结话题产出提醒，可在用户不追问时兜住漏跟。",
       "scenario": "E3,E4",
       "next_action": "解除条件：定义 schema（写入用户个人域前需用户确认）→ 回填 1-2 条真实线索（分诊证据）→ 每日节拍对超期线程序产出提醒 → 用户评价提醒是否「值得说」。不自动创建条目，只提醒既有条目。",
-      "evidence": [
-        "docs/capability-checklist.md",
-        "demo-journal.md"
-      ]
+      "evidence": []
     }
   ],
   "rounds": [
