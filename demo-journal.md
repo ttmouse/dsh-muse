@@ -180,3 +180,4 @@
 - [2026-10-07 17:13 +0800] 目标轮 1/12（巡查机制收尾）：接手断线会话遗留的毒丸修复并入库（mailbox 写侧 kind 校验+routines 读侧隔离+2 条回归，muse 包 33/33 绿，47f2c6c）；muse-status.sh 补主控/三 plist 漂移段+stall-patrol 入清单；stall-patrol kickstart 实测去重静默路径 ✓。平台行为新知：session/rename 对 goal-active 会话报 agent-busy（keeper 持久持有代理，非运行中）——重复会话改用 7 天长去重压制告扰，改名留待 keeper 侧解除或用户手动。巡查机制整链路（探测→分类→去重→上报→处置）当日闭环。
 - [2026-10-07 17:19 +0800] 目标轮 2/12：巡查分类抽纯函数入库（examples/lib/stall-classify.mjs）+ 8 用例回归（16 断言全绿），测试抓出去重地图不跟手实 bug（三同 goal 会话时第三个漏判 duplicate）——今天线上数据恰好没踩中，测试的价值当场兑现。R-stall-patrol 入账本（24 轮），evolution:check 绿。
 - [2026-10-07 17:21 +0800] 补跑今晨漏掉的 9:30 对标审查（主控轮 3）：Today.app 1.21.3 无变化；web_search 一波 person-pages 隐私报道与今晨捕获同源，新细节仅「为未使用者保留档案」一条——清单 I 类补 I5（标题级信源如实标注），其余无变化不动代码。
+- [2026-10-07 17:22 +0800] 目标轮 4/12（收束）：I1 缺口固化账本候选 B07（关键人 Open Threads 结构化跟进，waiting，解除条件含用户确认 schema）；goal-pool armed 状态刷新（四机制当日闭环）；系统健康快照全绿（7 任务/3 plist 对齐/745 会话普查稳定）。

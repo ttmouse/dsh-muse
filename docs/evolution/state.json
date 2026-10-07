@@ -95,6 +95,19 @@
         "R-multigoal-e2e"
       ],
       "summary": "主控编排定案：官方 agent-team（成员会话+共享任务板 CAS+面板）为并行工作基座；3 并行成员 42s 交付、零越界、账本零污染"
+    },
+    {
+      "id": "B07",
+      "title": "关键人 Open Threads——未完结话题的结构化跟进",
+      "status": "waiting",
+      "problem": "对标 I1 缺口：有联系人卡片但缺 Open Threads/Strengthening 段落；真实痛点已发生——曾绍玲「人大那个事」悬置 25 天未获回复，10-06 深度分诊补时间维度才还原真相（若当时有结构化未完结话题即可当天提醒）。",
+      "hypothesis": "在 key-people.json 增加结构化 open_threads（事项+起始时间+最后动作+到期语义），每日节拍对超期未完结话题产出提醒，可在用户不追问时兜住漏跟。",
+      "scenario": "E3,E4",
+      "next_action": "解除条件：定义 schema（写入用户个人域前需用户确认）→ 回填 1-2 条真实线索（分诊证据）→ 每日节拍对超期线程序产出提醒 → 用户评价提醒是否「值得说」。不自动创建条目，只提醒既有条目。",
+      "evidence": [
+        "docs/capability-checklist.md",
+        "demo-journal.md"
+      ]
     }
   ],
   "rounds": [
