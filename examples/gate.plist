@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.dsh-muse.gate</string>
+  <key>ProgramArguments</key><array>
+    <string>/opt/homebrew/bin/node</string>
+    <string>/Users/douba/Projects/dsh-muse/examples/gate/gate.mjs</string>
+    <string>--url</string><string>http://127.0.0.1:19387</string>
+    <string>--session</string><string>session-da8579be-bcb4-44b9-93a8-7fd618b01b0f</string>
+    <string>--rules</string><string>/Users/douba/Projects/dsh-muse/examples/gate/local-rules.json</string>
+    <string>--judge</string>
+  </array>
+  <key>StartInterval</key><integer>1800</integer>
+  <key>WorkingDirectory</key><string>/Users/douba/Projects/dsh-muse</string>
+  <key>RunAtLoad</key><true/>
+  <key>StandardOutPath</key><string>/tmp/dsh-muse-gate.log</string>
+  <key>StandardErrorPath</key><string>/tmp/dsh-muse-gate.log</string>
+</dict></plist>

@@ -26,12 +26,15 @@ mid = d.get('masterSession') or '（未登记）'
 print('  当前主控:', mid)
 print('  登记日期:', d.get('date', '?'))
 examples = os.path.join(sys.argv[1], 'examples')
-for name in ['message-triage.plist', 'ops-warden-trigger.plist', 'stall-patrol.plist']:
+for name in ['message-triage.plist', 'ops-warden-trigger.plist', 'stall-patrol.plist', 'gate.plist']:
     path = os.path.join(examples, name)
     if not os.path.exists(path):
         print('  %s: (文件不存在)' % name)
         continue
-    m = re.search(r'MUSE_SESSION_ID</key><string>(session-[0-9a-f-]+)', open(path).read())
+    content = open(path).read()
+    m = re.search(r'MUSE_SESSION_ID</key><string>(session-[0-9a-f-]+)', content)
+    if not m:
+        m = re.search(r'--session</string><string>(session-[0-9a-f-]+)', content)
     pointed = m.group(1) if m else '（未指向任何会话）'
     print('  %s: %s' % (name, '与主控一致' if pointed == mid else '⚠️ 指向 %s，与主控不一致，需重指并重载' % pointed))
 PY
@@ -39,7 +42,7 @@ else
   echo "  （无 master-session.json）"
 fi
 echo "== 决策日志元数据（不显示消息内容）=="
-log_metadata "gate" "$project_dir/examples/gate/gate-decisions.log"
+log_metadata "gate" "$project_dir/gate-decisions.log"
 log_metadata "reflect" "$project_dir/examples/reflect/reflect-decisions.log"
 echo "== 记忆文件 =="; wc -l ~/.dsh/memories/main.md 2>/dev/null || echo "  (尚无记忆)"
 echo "== 当前会话工作预算 =="

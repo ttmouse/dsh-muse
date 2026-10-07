@@ -36,7 +36,7 @@ if (process.argv.includes('--dry-run')) {
   console.log(`rotate(dry-run): today=${today} state.date=${state.date || '(空)'} state.master=${state.masterSession || '(空)'}`)
   console.log(state.date === today
     ? 'rotate(dry-run): 将跳过（今日已轮换）'
-    : `rotate(dry-run): 将新建主会话 + 清理卸任会话 ${state.masterSession || '(无)'} 的 ${n} 条调度 + 注入简报 + 重指 2 plist + 落盘`)
+    : `rotate(dry-run): 将新建主会话 + 清理卸任会话 ${state.masterSession || '(无)'} 的 ${n} 条调度 + 注入简报 + 重指 4 plist + 落盘`)
   process.exit(0)
 }
 
@@ -96,8 +96,8 @@ await callRpc(URL_, 'session/prompt', {
   content: [{ type: 'text', text: brief }],
 })
 
-// ---- 5. 重指三个 plist ----
-for (const name of ['ops-warden-trigger', 'message-triage', 'stall-patrol']) {
+// ---- 5. 重指四个 plist ----
+for (const name of ['ops-warden-trigger', 'message-triage', 'stall-patrol', 'gate']) {
   const plist = join(projectDir, 'examples', `${name}.plist`)
   if (!existsSync(plist)) continue
   try {
