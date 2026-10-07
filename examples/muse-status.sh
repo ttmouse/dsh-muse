@@ -17,6 +17,27 @@ log_metadata() {
 
 echo "== launchd 任务 =="
 launchctl list | awk '$3 ~ /dsh-muse/ { print $1, $2, $3; found = 1 } END { if (!found) print "  (未安装)" }'
+echo "== 主控会话（权威登记：~/.dsh/muse/master-session.json）=="
+if [ -f "$HOME/.dsh/muse/master-session.json" ]; then
+  python3 - "$project_dir" <<'PY'
+import json, re, os, sys
+d = json.load(open(os.path.expanduser('~/.dsh/muse/master-session.json')))
+mid = d.get('masterSession') or '（未登记）'
+print('  当前主控:', mid)
+print('  登记日期:', d.get('date', '?'))
+examples = os.path.join(sys.argv[1], 'examples')
+for name in ['message-triage.plist', 'ops-warden-trigger.plist', 'stall-patrol.plist']:
+    path = os.path.join(examples, name)
+    if not os.path.exists(path):
+        print('  %s: (文件不存在)' % name)
+        continue
+    m = re.search(r'MUSE_SESSION_ID</key><string>(session-[0-9a-f-]+)', open(path).read())
+    pointed = m.group(1) if m else '（未指向任何会话）'
+    print('  %s: %s' % (name, '与主控一致' if pointed == mid else '⚠️ 指向 %s，与主控不一致，需重指并重载' % pointed))
+PY
+else
+  echo "  （无 master-session.json）"
+fi
 echo "== 决策日志元数据（不显示消息内容）=="
 log_metadata "gate" "$project_dir/examples/gate/gate-decisions.log"
 log_metadata "reflect" "$project_dir/examples/reflect/reflect-decisions.log"

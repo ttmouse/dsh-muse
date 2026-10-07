@@ -4,12 +4,13 @@ import type { Context } from '@deepseek-ai/cordis'
 import type { Agent, AgentOptions } from '@deepseek-ai/dsh-agent'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
-import { readdirSync, readFileSync, existsSync, appendFileSync } from 'node:fs'
+import { readdirSync, readFileSync, existsSync, appendFileSync, renameSync } from 'node:fs'
 import { join } from 'node:path'
 import { createHash, randomUUID } from 'node:crypto'
 import { agentAutonomy } from './intent-store.ts'
 import { museSessionEvents } from './session-events.ts'
 import { atomicJson, museHome, readNotice } from './mailbox.ts'
+import type { MuseNotice } from './mailbox.ts'
 
 declare module '@deepseek-ai/dsh-llm' {
   interface MessageSourceMap {
@@ -244,9 +245,18 @@ export class MuseRoutines extends Service {
       }
       const notices = join(this.root, 'notices')
       for (const name of existsSync(notices) ? readdirSync(notices).filter(n => n.endsWith('.json')) : []) {
+        const path = join(notices, name)
+        let notice: MuseNotice
+        try { notice = readNotice(path) }
+        catch {
+          /* A record outside the schema can never become deliverable. Quarantine it
+           * once (rename keeps the evidence inspectable) instead of deferring it
+           * forever every poll; only the sanctioned atomic writer feeds this box. */
+          renameSync(path, `${path}.invalid`)
+          this.audit(`notice-quarantined ${name}`)
+          continue
+        }
         try {
-          const path = join(notices, name)
-          const notice = readNotice(path)
           if (notice.deliveredAt !== undefined) continue
           const agent = this.ctx.agents.get(SessionId(notice.sessionId))
           if (!agent || agent.status !== 'idle' || agent.inbox.nextTurn.length || agent.inbox.nextStep.length

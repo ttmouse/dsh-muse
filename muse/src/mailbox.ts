@@ -30,6 +30,9 @@ export interface MuseNotice {
 /** Same content for a session stays one proposal until it is explicitly changed. */
 export function queueNotice(sessionId: string, text: string, kind: MuseNotice['kind'] = 'notice', root = museHome()): { id: string; queued: boolean } {
   if (!sessionId || !text.trim() || text.length > 12000) throw new Error('Invalid Muse notice')
+  // The kind parameter crosses from untyped script callers; validate here so a
+  // record the deliverer cannot parse never enters the mailbox.
+  if (!['notice', 'idea'].includes(kind)) throw new Error(`Invalid Muse notice kind: ${kind}`)
   const id = createHash('sha256').update(JSON.stringify([sessionId, kind, text.trim()])).digest('hex')
   const path = join(root, 'notices', `${id}.json`)
   if (existsSync(path)) return { id, queued: false }

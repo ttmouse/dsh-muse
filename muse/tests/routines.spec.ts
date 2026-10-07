@@ -6,7 +6,7 @@ import GoalService from '@deepseek-ai/dsh-goal'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import type { UserMessage } from '@deepseek-ai/dsh-session'
-import { mkdtempSync, rmSync, readdirSync, readFileSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, rmSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { MuseRoutines, nextOccurrence } from '../src/routines.ts'
@@ -143,6 +143,28 @@ describe('Muse timer routines', () => {
     queueNotice(f.session.id, 'a proposal', 'idea', root)
     await f.service.tick()
     expect(f.queued).toHaveLength(0)
+  })
+
+  it('quarantines an out-of-schema notice once and still delivers valid ones in the same tick', async () => {
+    const f = await fixture()
+    f.idle()
+    const poison = join(root, 'notices', 'poison.json')
+    mkdirSync(join(root, 'notices'), { recursive: true })
+    writeFileSync(poison, JSON.stringify({ version: 1, id: 'poison', sessionId: f.session.id, kind: 'handoff', text: 'written outside the schema', createdAt: Date.now() }))
+    queueNotice(f.session.id, 'a valid notice', 'notice', root)
+    await f.service.tick()
+    expect(f.queued).toHaveLength(1)
+    expect(readdirSync(join(root, 'notices'))).toContain('poison.json.invalid')
+    expect(readdirSync(join(root, 'notices'))).not.toContain('poison.json')
+    expect(readFileSync(join(root, 'activity.log'), 'utf8')).toContain('notice-quarantined poison.json')
+    // The quarantined name leaves the .json listing, so later ticks stay silent about it.
+    await f.service.tick()
+    expect(f.queued).toHaveLength(1)
+    expect(readFileSync(join(root, 'activity.log'), 'utf8').match(/notice-quarantined/g)).toHaveLength(1)
+  })
+
+  it('rejects notice kinds outside the schema at the writer boundary', () => {
+    expect(() => queueNotice('session-x', 'text', 'handoff' as unknown as 'notice', root)).toThrow('Invalid Muse notice kind')
   })
 
   it('records a waiting condition with backoff and a completed task ends future runs', async () => {
