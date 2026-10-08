@@ -1,6 +1,10 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { classifySessions } from '../lib/stall-classify.mjs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { rmSync } from 'node:fs'
+import { classifySessions, reportKey, reportTtlMs, REPORT_TTL_MS } from '../lib/stall-classify.mjs'
+import { seenRecently, markSeen } from '../lib/seen-set.mjs'
 
 const NOW = 1_800_000_000_000
 const min = m => NOW - m * 60_000
@@ -86,4 +90,37 @@ test('不同 goal 不互相同化', () => {
   b.projections.values.goal.goal.id = 'goal-b'
   const out = classifySessions([a, b], { masterId: 'session-m', now: NOW })
   assert.ok(out.every(c => c.kind === 'stalled-goal' && c.canonical === true))
+})
+
+test('上报去重键：blocked-goal 带目标版本、其余只按会话与类别（2026-10-08 卡片噪声回归）', () => {
+  const blocked = { sessionId: 'session-b', kind: 'blocked-goal', goalRev: 4 }
+  assert.equal(reportKey(blocked), 'session-b:blocked-goal:r4')
+  // 目标版本变化（用户发话/keeper 推进）→ 键变化 → 会重新上报
+  assert.notEqual(reportKey(blocked), reportKey({ ...blocked, goalRev: 5 }))
+  // 陈旧 invocation 没有 goalRev 时退化为 r0，不抛错
+  assert.equal(reportKey({ sessionId: 'session-b', kind: 'blocked-goal' }), 'session-b:blocked-goal:r0')
+  assert.equal(reportKey({ sessionId: 'session-a', kind: 'stalled-goal', goalRev: 1 }), 'session-a:stalled-goal')
+})
+
+test('压制时长：blocked-goal 与 duplicate-goal 走 7 天长窗，其余 6 小时', () => {
+  assert.equal(reportTtlMs({ kind: 'blocked-goal' }), REPORT_TTL_MS.long)
+  assert.equal(reportTtlMs({ kind: 'duplicate-goal' }), REPORT_TTL_MS.long)
+  assert.equal(reportTtlMs({ kind: 'stalled-goal' }), REPORT_TTL_MS.default)
+  assert.equal(reportTtlMs({ kind: 'stalled-todos' }), REPORT_TTL_MS.default)
+  assert.equal(reportTtlMs({ kind: 'stalled-inbox' }), REPORT_TTL_MS.default)
+})
+
+test('同一条 blocked-goal 状态不变 → 长窗内不再上报；目标版本变化 → 重新上报', () => {
+  const statePath = join(tmpdir(), `stall-seen-test-${process.pid}-${Math.random().toString(16).slice(2)}.json`)
+  try {
+    const c = { sessionId: 'session-blocked', kind: 'blocked-goal', goalRev: 4 }
+    assert.equal(seenRecently(statePath, reportKey(c), reportTtlMs(c)), false)
+    markSeen(statePath, reportKey(c), reportTtlMs(c))
+    // 1 小时后（> 旧的 6h 窗口之外也不再重复，因为压制窗是 7 天）
+    assert.equal(seenRecently(statePath, reportKey(c), reportTtlMs(c), { now: Date.now() + 7 * 3600e3 }), true)
+    // 目标版本推进到 5 → 新键，需要重新上报
+    assert.equal(seenRecently(statePath, reportKey({ ...c, goalRev: 5 }), reportTtlMs(c)), false)
+  } finally {
+    rmSync(statePath, { force: true })
+  }
 })

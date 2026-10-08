@@ -48,3 +48,23 @@ export function classifySessions(all, { masterId = '', now = Date.now(), idleMin
   }
   return candidates
 }
+
+/**
+ * 上报去重键与压制时长（纯函数，供 stall-patrol 与回归测试共用）。
+ *
+ * 2026-10-08 加：blocked-goal 原先与普通候选一样只有 6 小时压制，同一条「等人发话」的
+ * 闲置会话每天被重复上报 4 次（线上实测 09:00 / 15:00 同一会话各一份），属卡片噪声。
+ * 现在 blocked-goal 的键带上 goal revision：版本不变=状态没变、只打扰用户一次；
+ * 用户一旦发话或 keeper 推进（rev 变化）立即重新上报。压制窗与 duplicate-goal 同为 7 天。
+ */
+export const REPORT_TTL_MS = { default: 6 * 3600e3, long: 7 * 24 * 3600e3 }
+
+export function reportKey(c) {
+  return c.kind === 'blocked-goal'
+    ? `${c.sessionId}:${c.kind}:r${c.goalRev ?? 0}`
+    : `${c.sessionId}:${c.kind}`
+}
+
+export function reportTtlMs(c) {
+  return c.kind === 'blocked-goal' || c.kind === 'duplicate-goal' ? REPORT_TTL_MS.long : REPORT_TTL_MS.default
+}

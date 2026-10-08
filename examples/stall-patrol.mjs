@@ -12,7 +12,8 @@
  *   - 排除自身（master-session.json 的 masterSession）、blank、24h 外、标题带 已退役/已废弃/已归档
  *   - 同一 goalId 多会话 → 只留最新为 canonical，其余记 duplicate（防止推活造成目标再分叉）
  * 上报：仅当有候选时经 session/prompt 队列注入主控（静默纪律：无候选零打扰）；
- *       seen-set 去重（TTL 6h），统计落 ~/.dsh/muse/stall-patrol.json。
+ *       seen-set 去重（普通候选 6h；blocked-goal 按 goal revision 压制 7 天——状态没变只打扰一次，
+ *       duplicate-goal 同样 7 天），统计落 ~/.dsh/muse/stall-patrol.json（含 suppressed 计数）。
  * 授权链：用户 2026-10-07 直接指示主控巡查并推动断线对话；goal 的 resume 仍受 keeper
  *       人类话语权边界约束——blocked 类只转告用户，不代劳。
  *
@@ -21,7 +22,7 @@
  */
 import { callRpc } from './lib/dsh-client.mjs'
 import { seenRecently, markSeen } from './lib/seen-set.mjs'
-import { classifySessions } from './lib/stall-classify.mjs'
+import { classifySessions, reportKey, reportTtlMs } from './lib/stall-classify.mjs'
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
@@ -60,11 +61,11 @@ if (dryRun) {
   process.exit(0)
 }
 
-// ---- seen-set 去重后上报（duplicate-goal 处置过即长窗压制，防止每 6h 重复打扰）----
+// ---- seen-set 去重后上报（duplicate-goal / blocked-goal 长窗压制，防止重复打扰）----
 const seenPath = join(HOME, '.dsh', 'muse', 'stall-patrol-seen.json')
-const fresh = candidates.filter(c => !seenRecently(seenPath, `${c.sessionId}:${c.kind}`, c.kind === 'duplicate-goal' ? 7 * 24 * 3600e3 : 6 * 3600e3))
+const fresh = candidates.filter(c => !seenRecently(seenPath, reportKey(c), reportTtlMs(c)))
 if (!fresh.length) {
-  writeFileSync(join(HOME, '.dsh', 'muse', 'stall-patrol.json'), JSON.stringify({ at: new Date().toISOString(), total: all.length, candidates: candidates.length, reported: 0 }, null, 2))
+  writeFileSync(join(HOME, '.dsh', 'muse', 'stall-patrol.json'), JSON.stringify({ at: new Date().toISOString(), total: all.length, candidates: candidates.length, reported: 0, suppressed: candidates.length, detail: candidates }, null, 2))
   console.log('stall-patrol: 候选', candidates.length, '（均已在去重窗内上报过），静默退出')
   process.exit(0)
 }
@@ -78,7 +79,7 @@ await callRpc(URL_, 'session/prompt', {
   content: [{ type: 'text', text: brief }],
 })
 
-for (const c of fresh) markSeen(seenPath, `${c.sessionId}:${c.kind}`, c.kind === 'duplicate-goal' ? 7 * 24 * 3600e3 : 6 * 3600e3, { cap: 50 })
+for (const c of fresh) markSeen(seenPath, reportKey(c), reportTtlMs(c), { cap: 50 })
 mkdirSync(join(HOME, '.dsh', 'muse'), { recursive: true })
-writeFileSync(join(HOME, '.dsh', 'muse', 'stall-patrol.json'), JSON.stringify({ at: new Date().toISOString(), total: all.length, candidates: candidates.length, reported: fresh.length, detail: fresh }, null, 2))
+writeFileSync(join(HOME, '.dsh', 'muse', 'stall-patrol.json'), JSON.stringify({ at: new Date().toISOString(), total: all.length, candidates: candidates.length, reported: fresh.length, suppressed: candidates.length - fresh.length, detail: fresh }, null, 2))
 console.log('stall-patrol: 已上报主控', fresh.length, '个候选（普查', all.length, '会话）')
