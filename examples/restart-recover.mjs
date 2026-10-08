@@ -245,6 +245,7 @@ if (!dryRun) {
 report.modelFail = modelFail
 
 if (!fresh.length && !modelFail.resumed) {
+  report.detail = candidates   // 静默拍也留清单：主控随时能核查「被压制的到底是谁」
   try { writeFileSync(join(MUSE_DIR, 'restart-recover.json'), JSON.stringify(report, null, 2)) } catch (e) { console.error('restart-recover: 报告落盘失败', String(e?.message ?? e).slice(0, 120)) }
   // 三种「没得报」要说清是哪一种，否则日志把「压根没扫到中断对话」错说成「已报过」，
   // 事后排查会误以为功能正常在压制、实际可能是判据失效（2026-10-09 修正）。
@@ -263,11 +264,13 @@ try {
 } catch (e) {
   report.via = 'failed'
   report.error = String(e?.message ?? e).slice(0, 200)
+  report.detail = fresh
   try { writeFileSync(join(MUSE_DIR, 'restart-recover.json'), JSON.stringify(report, null, 2)) } catch {}
   console.error(`restart-recover: 投递失败，本拍不记账、下一拍重试——${report.error}`)
   process.exit(0)
 }
 report.via = via
+report.detail = fresh   // 主控处置要从报告直接拿候选清单；2026-10-09 发现 detail 缺失导致只能反查通知原文
 
 // 先投递成功、后记账；记账失败由 markSeenMany 自己吞掉并提醒（见 seen-set 头注）。
 markSeenMany(seenPath, fresh.map(c => seenKeyOf(c, identity.startedAt)), reportTtlMs(), { cap: 50 })
