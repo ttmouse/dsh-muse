@@ -4,7 +4,7 @@
  *
  * 流程：创建今日新主会话 → 清理卸任会话私有调度（防双跑）→
  *       注入交接简报（目标池/关键人/纪律/重建清单）→
- *       重指 ops-warden-trigger 与 message-triage 的 plist → 更新 master-session.json。
+ *       重指 5 个会话相关 plist（ops-warden-trigger/message-triage/stall-patrol/gate/reflect）→ 更新 master-session.json。
  * 用户晨间打开 App 即看到已就绪的新对话，直接对话即可（首条消息=目标挂载授权）。
  * 旧会话归档不删。
  *
@@ -36,7 +36,7 @@ if (process.argv.includes('--dry-run')) {
   console.log(`rotate(dry-run): today=${today} state.date=${state.date || '(空)'} state.master=${state.masterSession || '(空)'}`)
   console.log(state.date === today
     ? 'rotate(dry-run): 将跳过（今日已轮换）'
-    : `rotate(dry-run): 将新建主会话 + 清理卸任会话 ${state.masterSession || '(无)'} 的 ${n} 条调度 + 注入简报 + 重指 4 plist + 落盘`)
+    : `rotate(dry-run): 将新建主会话 + 清理卸任会话 ${state.masterSession || '(无)'} 的 ${n} 条调度 + 注入简报 + 重指 5 plist + 落盘`)
   process.exit(0)
 }
 
@@ -96,8 +96,8 @@ await callRpc(URL_, 'session/prompt', {
   content: [{ type: 'text', text: brief }],
 })
 
-// ---- 5. 重指四个 plist ----
-for (const name of ['ops-warden-trigger', 'message-triage', 'stall-patrol', 'gate']) {
+// ---- 5. 重指五个 plist（reflect 于 2026-10-08 从 ~/Library 迁入正本，修其跨轮换漏指）----
+for (const name of ['ops-warden-trigger', 'message-triage', 'stall-patrol', 'gate', 'reflect']) {
   const plist = join(projectDir, 'examples', `${name}.plist`)
   if (!existsSync(plist)) continue
   try {

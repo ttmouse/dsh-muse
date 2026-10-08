@@ -26,7 +26,7 @@ mid = d.get('masterSession') or '（未登记）'
 print('  当前主控:', mid)
 print('  登记日期:', d.get('date', '?'))
 examples = os.path.join(sys.argv[1], 'examples')
-for name in ['message-triage.plist', 'ops-warden-trigger.plist', 'stall-patrol.plist', 'gate.plist']:
+for name in ['message-triage.plist', 'ops-warden-trigger.plist', 'stall-patrol.plist', 'gate.plist', 'reflect.plist']:
     path = os.path.join(examples, name)
     if not os.path.exists(path):
         print('  %s: (文件不存在)' % name)

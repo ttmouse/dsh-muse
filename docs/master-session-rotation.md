@@ -11,7 +11,7 @@
 | 目标池（4 个长期目标） | ~/.dsh/muse/goal-pool.json | 随时可读 |
 | 关键人注册表 | ~/.dsh/muse/key-people.json + 记忆 | 已入记忆 |
 | Muse 身份 | ~/.dsh/muse/identity.json | 自动注入 |
-| launchd 静默层（gate/reflect/分诊/巡查/复盘触发） | 正本在本仓库 examples/*.plist（gate / ops-warden-trigger / message-triage / stall-patrol，rotate-master 每日 08:00 自动重指四 plist）；reflect 与 memory-maintenance 仍在 ~/Library/LaunchAgents | 与对话无关，继续跑 |
+| launchd 静默层（gate/reflect/分诊/巡查/复盘触发） | 正本在本仓库 examples/*.plist（gate / ops-warden-trigger / message-triage / stall-patrol / reflect，rotate-master 每日 08:00 自动重指五 plist）；仅 memory-maintenance（无会话指向）仍在 ~/Library/LaunchAgents | 与对话无关，继续跑 |
 
 ## 需要在新对话重建（约 5 分钟）
 
@@ -25,7 +25,7 @@ keeper 会武装目标；把 goal-pool.json 的 armed 目标贴给它确认即�
 - **周日 20:10 每周摘要**：node examples/weekly-digest.mjs --note
 - **周日 21:00 每周元复盘·元认知层**：对本周复盘体系本身做复盘（复盘质量/漏报/目标差异/自动化清单增删改/复盘逻辑五问；每周恰好一张卡，含自指降频条款）——prompt 正本见 docs/master-session-rotation.md 附录 D（2026-10-07 上线）
 
-### 3. 更新触发器指向（4 个 plist，各 1 行；rotate-master 每日 08:00 已自动覆盖，手动轮换时才需照做）
+### 3. 更新触发器指向（5 个 plist，各 1 行；rotate-master 每日 08:00 已自动覆盖，手动轮换时才需照做）
 - examples/ops-warden-trigger.plist 的 MUSE_SESSION_ID 改为新会话 id，然后：
 `launchctl bootout gui/$(id -u)/com.dsh-muse.ops-warden-trigger; launchctl bootstrap gui/$(id -u) ~/Projects/dsh-muse/examples/ops-warden-trigger.plist`
 - examples/message-triage.plist 的 MUSE_SESSION_ID 同样改新 id 并重载：
@@ -34,6 +34,8 @@ keeper 会武装目标；把 goal-pool.json 的 armed 目标贴给它确认即�
 `launchctl bootout gui/$(id -u)/com.dsh-muse.stall-patrol; launchctl bootstrap gui/$(id -u) ~/Projects/dsh-muse/examples/stall-patrol.plist`
 - examples/gate.plist 的 --session 参数同样改新 id 并重载（gate 信号注入主会话；2026-10-07 入库并纳入轮换清单——此前装在 ~/Library/LaunchAgents 的旧正本跨两次轮换漏指，日历类信号投进无人读的旧会话，实证见 retro 日常复盘记录 2026-10-07 21:3x 条）：
 `launchctl bootout gui/$(id -u)/com.dsh-muse.gate; launchctl bootstrap gui/$(id -u) ~/Projects/dsh-muse/examples/gate.plist`
+- examples/reflect.plist 的 --session 参数同样改新 id 并重载（反思循环注入主会话；2026-10-08 入库并纳入轮换清单——此前装在 ~/Library/LaunchAgents 且 --session 自 10-5 起固定指旧会话 2d91d053，反思产出的提议投进无人读的会话，与 gate 同因漏网；实证见 retro 日常复盘记录 2026-10-08 09:0x 条）：
+`launchctl bootout gui/$(id -u)/com.dsh-muse.reflect; launchctl bootstrap gui/$(id -u) ~/Projects/dsh-muse/examples/reflect.plist`
 （漏改则 A 类注入打向旧会话，旧会话关闭后静默失败；2026-10-07 分诊复核补记。另：StartCalendarInterval 注册会失效——重载即修，2026-10-07 实证：分诊任务加载后 runs=0 三次日历点未触发，bootout+bootstrap 后注册恢复，另用临时探针证明当日历投递本身正常。）
 
 ### 4. 重生 ops-warden 成员（1 句话）
@@ -110,6 +112,6 @@ keeper 会武装目标；把 goal-pool.json 的 armed 目标贴给它确认即�
 
 ### 切换顺序（避免双跑或空窗）
 1. 新对话：照抄 A/B/C/D 创建 4 个调度
-2. 新对话：更新 examples/ops-warden-trigger.plist 的 MUSE_SESSION_ID → 新会话 id，bootstrap 重载
+2. 新对话：更新 examples/ops-warden-trigger.plist 的 MUSE_SESSION_ID → 新会话 id，bootstrap 重载（其余四个会话相关 plist：message-triage/stall-patrol/gate/reflect 同理）
 3. 旧对话：让旧 Muse 执行 schedule_delete 删除旧调度（schedule_list 拿 id）
 4. 验证：次日 9:05/9:30/20:35 的卡片出现在新对话
