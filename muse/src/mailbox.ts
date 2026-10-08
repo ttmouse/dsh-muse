@@ -55,3 +55,14 @@ export function readNotice(path: string): MuseNotice {
     || typeof value.sessionId !== 'string' || typeof value.id !== 'string' || !Number.isFinite(value.createdAt)) throw new Error('Invalid Muse mailbox record')
   return value
 }
+
+/**
+ * 定时观察类通知的保鲜期。过期的日程提醒送晚了比不送更糟：2026-10-08 实测发现 gate 的日历提醒
+ * 在目标会话离线时会在信箱里排队 37–80 小时仍等着投递（一旦那个会话醒来就会收到过期提醒）。
+ * 提案（idea）不限时——想法没有保质期。
+ */
+export const NOTICE_TTL_MS = 12 * 60 * 60 * 1000
+
+export function noticeExpired(notice: MuseNotice, now = Date.now()): boolean {
+  return notice.kind === 'notice' && now - notice.createdAt > NOTICE_TTL_MS
+}

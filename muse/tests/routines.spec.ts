@@ -163,6 +163,37 @@ describe('Muse timer routines', () => {
     expect(readFileSync(join(root, 'activity.log'), 'utf8').match(/notice-quarantined/g)).toHaveLength(1)
   })
 
+  it('expires a stale timer notice instead of delivering it late (2026-10-08 排队 37-80h 实测回归)', async () => {
+    const f = await fixture()
+    f.idle()
+    mkdirSync(join(root, 'notices'), { recursive: true })
+    writeFileSync(join(root, 'notices', 'stale.json'), JSON.stringify({
+      version: 1, id: 'stale', sessionId: f.session.id, kind: 'notice',
+      text: '37 小时前的日程提醒', createdAt: Date.now() - 37 * 3600 * 1000,
+    }))
+    const fresh = queueNotice(f.session.id, '刚刚发生的提醒', 'notice', root)
+    await f.service.tick()
+    // 过期的那条不投递、改为 .expired 留证；新鲜的照常投递
+    expect(f.queued).toHaveLength(1)
+    expect(f.queued[0]?.content[0]).toMatchObject({ text: expect.stringContaining('刚刚发生的提醒') })
+    expect(readdirSync(join(root, 'notices'))).toContain('stale.json.expired')
+    expect(readFileSync(join(root, 'activity.log'), 'utf8')).toContain('notice-expired stale.json')
+    expect(fresh.queued).toBe(true)
+  })
+
+  it('never expires an idea: proposals have no deadline', async () => {
+    const f = await fixture()
+    f.idle()
+    mkdirSync(join(root, 'notices'), { recursive: true })
+    writeFileSync(join(root, 'notices', 'old-idea.json'), JSON.stringify({
+      version: 1, id: 'old-idea', sessionId: f.session.id, kind: 'idea',
+      text: '三天前的一个提议', createdAt: Date.now() - 72 * 3600 * 1000,
+    }))
+    await f.service.tick()
+    expect(f.queued).toHaveLength(1)
+    expect(f.queued[0]?.source).toMatchObject({ kind: 'muse', trigger: 'idea' })
+  })
+
   it('rejects notice kinds outside the schema at the writer boundary', () => {
     expect(() => queueNotice('session-x', 'text', 'handoff' as unknown as 'notice', root)).toThrow('Invalid Muse notice kind')
   })

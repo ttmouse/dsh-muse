@@ -10,6 +10,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { agentAutonomy } from './intent-store.ts'
 import { museSessionEvents } from './session-events.ts'
 import { atomicJson, museHome, readNotice } from './mailbox.ts'
+import { noticeExpired } from './mailbox.ts'
 import type { MuseNotice } from './mailbox.ts'
 
 declare module '@deepseek-ai/dsh-llm' {
@@ -258,6 +259,12 @@ export class MuseRoutines extends Service {
         }
         try {
           if (notice.deliveredAt !== undefined) continue
+          /* 过期的定时观察不再投递（日历提醒送晚了比不送更糟）；保留证据供事后查看。 */
+          if (noticeExpired(notice)) {
+            renameSync(path, `${path}.expired`)
+            this.audit(`notice-expired ${name}`)
+            continue
+          }
           const agent = this.ctx.agents.get(SessionId(notice.sessionId))
           if (!agent || agent.status !== 'idle' || agent.inbox.nextTurn.length || agent.inbox.nextStep.length
             || !this.ctx.agents.roots().includes(agent) || !this.authorized(agent)) continue
