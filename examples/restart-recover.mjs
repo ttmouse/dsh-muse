@@ -164,7 +164,12 @@ report.suppressed = candidates.length - fresh.length
 
 if (!fresh.length) {
   try { writeFileSync(join(MUSE_DIR, 'restart-recover.json'), JSON.stringify(report, null, 2)) } catch (e) { console.error('restart-recover: 报告落盘失败', String(e?.message ?? e).slice(0, 120)) }
-  console.log('restart-recover: 候选', candidates.length, '（去重窗内已报过），静默退出')
+  // 三种「没得报」要说清是哪一种，否则日志把「压根没扫到中断对话」错说成「已报过」，
+  // 事后排查会误以为功能正常在压制、实际可能是判据失效（2026-10-09 修正）。
+  const why = candidates.length
+    ? `候选 ${candidates.length}（去重窗内已报过）`
+    : `本拍无中断对话（普查 ${all.length} 会话，读投影 ${scanned} 个）`
+  console.log('restart-recover:', why, '，不投递、静默退出')
   process.exit(0)
 }
 

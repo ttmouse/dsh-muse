@@ -127,3 +127,21 @@ test('普查阶段必须自带防线：session/list 的 await 被 try/catch 包�
   assert.match(guard, /宿主未就绪/, 'catch 里要写明「宿主未就绪」')
   assert.match(guard, /process\.exit\(0\)/, 'catch 里必须干净退出，不得抛栈')
 })
+
+// 2026-10-09 回归（人类提问「如果检测到没有对话的话，还会发起吗？」）：
+// 契约是「零候选 ⇒ 不投递」，且日志必须说清是「没扫到」而不是「已报过」。
+// 源码级断言：投递调用只出现在 return 之后的无候选短路分支之外。
+test('零候选短路：不投递，且日志区分「无中断对话」与「已报过」', async () => {
+  const { readFileSync } = await import('node:fs')
+  const src = readFileSync(new URL('../restart-recover.mjs', import.meta.url), 'utf8')
+  const at = src.indexOf('if (!fresh.length) {')
+  assert.notEqual(at, -1, '零候选短路分支应存在')
+  const branchEnd = src.indexOf('process.exit(0)', at)
+  assert.notEqual(branchEnd, -1, '短路分支必须 exit 0')
+  const branch = src.slice(at, branchEnd)
+  assert.doesNotMatch(branch, /deliverToMaster/, '零候选分支里不得出现投递调用')
+  assert.match(branch, /本拍无中断对话/, '零候选要说清「没扫到」')
+  assert.match(branch, /去重窗内已报过/, '有候选但被压制时才说「已报过」')
+  // 投递调用必须排在短路分支之后，零候选永远走不到它
+  assert.ok(src.indexOf('deliverToMaster(') > branchEnd, '投递只能在零候选短路之后执行')
+})
