@@ -88,3 +88,42 @@ export function buildBrief(candidates, { total = 0, scanned = 0, restart = { cha
     '处置口径：逐个判断是否仍要继续——仍然相关就用 session/prompt 注入「继续」推动续跑（同 stall-patrol 的推活口径）并 journal 记一行；超过 24 小时或话题已过期的，只向用户一句话点出、由用户决定，不要盲目唤醒。已按 openTurnStartSeq 去重 7 天，同一轮次不会重复上报。',
   ].join('\n')
 }
+
+/**
+ * 模型类失败的识别（2026-10-09，样本：claim-d8cdce3c WorkBuddy 额度限频后用户手动切 GLM 恢复）。
+ * 这类会话与「未收口」互补：轮次**已经收了**，但收在模型侧错误上（额度/限频/PI_AI_ERROR…），
+ * openTurnStartSeq 看不见它们。判据：最后一个 turn/end 的 reason.kind === 'error' 且消息命中
+ * MODEL_FAIL_RE，且其后**没有任何 assistant/message**——报错后已有新输出说明有人换模型续跑过了。
+ */
+export const MODEL_FAIL_RE = /frequency limit|usage exceed|quota|rate limit|PI_AI_ERROR|insufficient (quota|balance|credit)|model (unavailable|overloaded)/i
+
+export function detectModelFailure(rows) {
+  let lastEnd = -1
+  for (let i = rows.length - 1; i >= 0; i--) if (rows[i]?.type === 'turn/end') { lastEnd = i; break }
+  if (lastEnd === -1) return null
+  const reason = rows[lastEnd]?.data?.reason ?? {}
+  const message = String(reason?.error?.message ?? reason?.message ?? '')
+  if (reason.kind !== 'error' || !MODEL_FAIL_RE.test(message)) return null
+  const resumedAfter = rows.slice(lastEnd + 1).some(r => r?.type === 'assistant/message')
+  if (resumedAfter) return null
+  return {
+    modelFail: true,
+    turnEndSeq: rows[lastEnd].seq ?? null,
+    code: String(reason?.error?.code ?? ''),
+    message: message.slice(0, 200),
+  }
+}
+
+/** 去重键：带出错的轮次序号——同一轮只打扰一次；之后若在新轮次再犯（新 seq）会重新触发。 */
+export function modelFailKey(sessionId, turnEndSeq) {
+  return `${sessionId}:model-fail:${turnEndSeq ?? '?'}`
+}
+
+/** 注入给故障会话的恢复指令：先换模型、再从断点续跑，换不动就明说。 */
+export function modelFailPrompt(fail) {
+  return [
+    `【模型故障恢复】你上一轮因模型侧错误中断（${fail.code || '模型错误'}：${fail.message}）。`,
+    '请先把本会话的模型切换到 zai-coding-cn/glm-5.3-flash（不可用再选其它可用模型），然后从中断处继续：先确认上一步实际做到哪里（以文件与工具结果为准，不要假设），把当前这一步做完并收尾。',
+    '若无法切换模型或切换后仍失败，直接说明卡点并停下，不要空转重试。',
+  ].join('\n')
+}

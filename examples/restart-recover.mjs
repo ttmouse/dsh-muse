@@ -21,13 +21,13 @@
  * --dry-run 只打印计划零投递（有副作用的脚本诞生即带降落伞）。
  */
 import { execFileSync } from 'node:child_process'
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { callRpc } from './lib/dsh-client.mjs'
 import { deliverToMaster } from './lib/master-channel.mjs'
 import { seenRecently, markSeen, markSeenMany } from './lib/seen-set.mjs'
-import { classifyInterrupted, seenKeyOf, reportTtlMs, buildBrief, detectRestart } from './lib/restart-recover.mjs'
+import { classifyInterrupted, seenKeyOf, reportTtlMs, buildBrief, detectRestart, detectModelFailure, modelFailKey, modelFailPrompt } from './lib/restart-recover.mjs'
 
 const URL_ = process.env.MUSE_URL ?? 'http://127.0.0.1:19387'
 const HOME = process.env.HOME ?? homedir()
@@ -162,7 +162,59 @@ try {
 report.reported = fresh.length
 report.suppressed = candidates.length - fresh.length
 
-if (!fresh.length) {
+/* ---- 模型类失败扫描（议题 832047A82866-4；与「未收口」互补）----
+ * 这类会话轮次已收、但收在模型侧错误上（额度/限频/PI_AI_ERROR…），投影信号看不见。
+ * 增量扫描：只看自上一拍以来变闲的会话（首拍回看 6 小时），每拍最多读 40 个转录；
+ * 命中且未记账时直接向该会话注入「切模型 + 续跑」指令（样本：WorkBuddy 限频 → glm-5.3-flash）。 */
+const MODEL_FAIL_CAP = 40
+const mfStatePath = join(MUSE_DIR, 'restart-recover-modelfail.json')
+let mfState = {}
+try { mfState = JSON.parse(readFileSync(mfStatePath, 'utf8')) } catch {}
+const mfSince = Number.isFinite(mfState.lastScanAt) ? mfState.lastScanAt - 60_000 : now - 6 * 3600e3
+const modelFail = { pool: 0, detected: 0, resumed: 0, skipped: 0 }
+if (!dryRun) {
+  const SESSIONS_ROOT = join(HOME, '.dsh', 'sessions')
+  let sessionDirs
+  try { sessionDirs = readdirSync(SESSIONS_ROOT).filter(n => n.startsWith('--')).map(n => join(SESSIONS_ROOT, n)) } catch { sessionDirs = [] }
+  const mfPool = all
+    .filter(s => !s.running && !s.blank && s.sessionId !== masterId)
+    .filter(s => s.updatedAt <= now - GRACE_MIN * 60_000 && s.updatedAt >= mfSince)
+    .filter(s => !/已退役|已废弃|已归档/.test(s.projections?.values?.title ?? ''))
+    .filter(s => !fresh.some(c => c.sessionId === s.sessionId))
+    .sort((a, b) => b.updatedAt - a.updatedAt)
+    .slice(0, MODEL_FAIL_CAP)
+  modelFail.pool = mfPool.length
+  const mfSeenPath = join(MUSE_DIR, 'restart-recover-modelfail-seen.json')
+  for (const s of mfPool) {
+    let rows = []
+    try {
+      let file = null
+      for (const dir of sessionDirs) { const f = join(dir, s.sessionId, 'session.v4.jsonl.zstd'); if (existsSync(f)) { file = f; break } }
+      if (!file) { modelFail.skipped++; continue }
+      const tail = execFileSync('/opt/homebrew/bin/zstd', ['-dc', file], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
+      rows = tail.split('\n').slice(-400).filter(Boolean).map(l => { try { return JSON.parse(l) } catch { return null } }).filter(Boolean)
+    } catch { modelFail.skipped++; continue }
+    const fail = detectModelFailure(rows)
+    if (!fail) continue
+    modelFail.detected++
+    const key = modelFailKey(s.sessionId, fail.turnEndSeq)
+    if (seenRecently(mfSeenPath, key, reportTtlMs())) { modelFail.skipped++; continue }
+    try {
+      await callRpc(URL_, 'session/prompt', {
+        requestId: `restart-modelfail-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
+        sessionId: s.sessionId, mode: 'queue',
+        content: [{ type: 'text', text: modelFailPrompt(fail) }],
+      })
+      modelFail.resumed++
+      markSeenMany(mfSeenPath, [key], reportTtlMs(), { cap: 50 })
+      console.log('restart-recover: 模型类失败已注入换模型恢复 →', s.sessionId.slice(0, 26), `（${fail.code || fail.message.slice(0, 60)}）`)
+    } catch (e) { modelFail.skipped++; console.error('restart-recover: 模型失败恢复注入失败', String(e?.message ?? e).slice(0, 120)) }
+  }
+  try { writeFileSync(mfStatePath, JSON.stringify({ lastScanAt: now }, null, 2)) } catch {}
+}
+report.modelFail = modelFail
+
+if (!fresh.length && !modelFail.resumed) {
   try { writeFileSync(join(MUSE_DIR, 'restart-recover.json'), JSON.stringify(report, null, 2)) } catch (e) { console.error('restart-recover: 报告落盘失败', String(e?.message ?? e).slice(0, 120)) }
   // 三种「没得报」要说清是哪一种，否则日志把「压根没扫到中断对话」错说成「已报过」，
   // 事后排查会误以为功能正常在压制、实际可能是判据失效（2026-10-09 修正）。

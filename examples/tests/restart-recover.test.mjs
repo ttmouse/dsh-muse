@@ -134,8 +134,10 @@ test('普查阶段必须自带防线：session/list 的 await 被 try/catch 包�
 test('零候选短路：不投递，且日志区分「无中断对话」与「已报过」', async () => {
   const { readFileSync } = await import('node:fs')
   const src = readFileSync(new URL('../restart-recover.mjs', import.meta.url), 'utf8')
-  const at = src.indexOf('if (!fresh.length) {')
-  assert.notEqual(at, -1, '零候选短路分支应存在')
+  // 2026-10-09 修订：模型类失败恢复（议题 832047A82866-4）引入第二条「有活干」路径——
+  // 零候选但注入过换模型恢复时不得静默退出，契约条件随之扩展。
+  const at = src.indexOf('if (!fresh.length && !modelFail.resumed) {')
+  assert.notEqual(at, -1, '零候选短路分支应存在（含模型失败恢复豁免）')
   const branchEnd = src.indexOf('process.exit(0)', at)
   assert.notEqual(branchEnd, -1, '短路分支必须 exit 0')
   const branch = src.slice(at, branchEnd)
@@ -144,4 +146,46 @@ test('零候选短路：不投递，且日志区分「无中断对话」与「�
   assert.match(branch, /去重窗内已报过/, '有候选但被压制时才说「已报过」')
   // 投递调用必须排在短路分支之后，零候选永远走不到它
   assert.ok(src.indexOf('deliverToMaster(') > branchEnd, '投递只能在零候选短路之后执行')
+})
+
+// ---- 模型类失败识别（议题 832047A82866-4；样本 claim-d8cdce3c WorkBuddy 限频）----
+import { detectModelFailure, modelFailKey, modelFailPrompt } from '../lib/restart-recover.mjs'
+
+const ev = (type, extra = {}, seq = 0) => ({ type, seq, data: extra })
+const turnEndError = (msg, seq = 100) => ev('turn/end', { reason: { kind: 'error', error: { code: 'PI_AI_ERROR', message: msg } } }, seq)
+
+test('模型类失败：最后一个 turn/end 为额度/限频错误且其后无输出 → 命中', () => {
+  const rows = [
+    ev('user/message', {}, 1),
+    ev('assistant/message', {}, 2),
+    turnEndError('WorkBuddy AI: usage exceeds frequency limit, ... reset at 2026-10-10'),
+  ]
+  const out = detectModelFailure(rows)
+  assert.ok(out?.modelFail)
+  assert.equal(out.code, 'PI_AI_ERROR')
+  assert.match(out.message, /frequency limit/)
+  assert.equal(out.turnEndSeq, 100)
+})
+
+test('报错后已有新助手输出（有人换模型续跑过）→ 不再标记', () => {
+  const rows = [
+    turnEndError('WorkBuddy AI: usage exceeds frequency limit', 100),
+    ev('turn/start', {}, 101),
+    ev('assistant/message', {}, 102),
+  ]
+  assert.equal(detectModelFailure(rows), null)
+})
+
+test('正常收尾 / 无 turn/end / 非模型错误 → 都不命中', () => {
+  assert.equal(detectModelFailure([ev('turn/end', { reason: { kind: 'stop' } }, 9)]), null)
+  assert.equal(detectModelFailure([ev('turn/end', { reason: { kind: 'error', error: { message: 'file not found' } } }, 9)]), null)
+  assert.equal(detectModelFailure([ev('user/message', {}, 1)]), null)
+})
+
+test('去重键按会话+出错轮次；提示词点名切换 glm-5.3-flash', () => {
+  assert.equal(modelFailKey('session-a', 100), 'session-a:model-fail:100')
+  assert.notEqual(modelFailKey('session-a', 100), modelFailKey('session-a', 200))
+  const p = modelFailPrompt({ code: 'PI_AI_ERROR', message: 'usage exceeds' })
+  assert.match(p, /glm-5\.3-flash/)
+  assert.match(p, /usage exceeds/)
 })
