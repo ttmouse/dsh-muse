@@ -27,7 +27,7 @@ import { join } from 'node:path'
 import { callRpc } from './lib/dsh-client.mjs'
 import { deliverToMaster } from './lib/master-channel.mjs'
 import { seenRecently, markSeen, markSeenMany } from './lib/seen-set.mjs'
-import { classifyInterrupted, seenKeyOf, reportTtlMs, buildBrief, detectRestart, detectModelFailure, modelFailKey, modelFailPrompt } from './lib/restart-recover.mjs'
+import { classifyInterrupted, seenKeyOf, reportTtlMs, buildBrief, detectRestart, detectModelFailure, modelFailKey, modelFailPrompt, genuinelyOpen, migrateSeenKeys } from './lib/restart-recover.mjs'
 
 const URL_ = process.env.MUSE_URL ?? 'http://127.0.0.1:19387'
 const HOME = process.env.HOME ?? homedir()
@@ -152,13 +152,48 @@ writeFileSync(identityPath, JSON.stringify({ ...identity, recordedAt: new Date()
 const seenPath = join(MUSE_DIR, 'restart-recover-seen.json')
 // 去重集读取失败时按空集处理（seenRecently 内部已容错），但要留痕：
 // 读不到会让同一批候选再报一次，与 stall-patrol 的「静默退出」日志形状不同，便于事后分辨。
+// 旧键迁移：换去重键的当拍，老候选不得被当成新候选重报（保留原时间戳）。
+try {
+  const raw = JSON.parse(readFileSync(seenPath, 'utf8'))
+  const migrated = migrateSeenKeys(raw, identity.startedAt)
+  if (JSON.stringify(migrated) !== JSON.stringify(raw)) writeFileSync(seenPath, JSON.stringify(migrated))
+} catch {}
+
+// 转录尾部读取（对账与模型失败扫描共用）：只取最后 400 条事件。
+const SESSIONS_ROOT = join(HOME, '.dsh', 'sessions')
+let sessionDirs
+try { sessionDirs = readdirSync(SESSIONS_ROOT).filter(n => n.startsWith('--')).map(n => join(SESSIONS_ROOT, n)) } catch { sessionDirs = [] }
+function transcriptFileOf(sessionId) {
+  for (const dir of sessionDirs) { const f = join(dir, sessionId, 'session.v4.jsonl.zstd'); if (existsSync(f)) return f }
+  return null
+}
+function tailRows(file, lines = 400) {
+  const tail = execFileSync('/opt/homebrew/bin/zstd', ['-dc', file], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
+  return tail.split('\n').slice(-lines).filter(Boolean).map(l => { try { return JSON.parse(l) } catch { return null } }).filter(Boolean)
+}
+
 let fresh
 try {
-  fresh = candidates.filter(c => !seenRecently(seenPath, seenKeyOf(c), reportTtlMs()))
+  fresh = candidates.filter(c => !seenRecently(seenPath, seenKeyOf(c, identity.startedAt), reportTtlMs()))
 } catch (e) {
   console.error(`restart-recover: 去重集不可用（${String(e?.message ?? e).slice(0, 120)}），本拍按空集处理`)
   fresh = candidates
 }
+
+// 转录对账（议题 832047A82866-2 ①）：投影滞后会把「已正常收尾」误报成中断，
+// 候选数量少（通常个位数），逐个读转录尾部确认真没收口才报。
+const reconcile = { checked: 0, stale: 0 }
+fresh = fresh.filter(c => {
+  const file = transcriptFileOf(c.sessionId)
+  if (!file) return true
+  try {
+    reconcile.checked++
+    if (!genuinelyOpen(tailRows(file), c.openTurnStartSeq)) { reconcile.stale++; return false }
+  } catch { /* 读不到就以投影为准 */ }
+  return true
+})
+if (reconcile.stale) console.log(`restart-recover: 转录对账剔除 ${reconcile.stale} 条投影滞后误报（核查 ${reconcile.checked} 条）`)
+report.reconcile = reconcile
 report.reported = fresh.length
 report.suppressed = candidates.length - fresh.length
 
@@ -173,9 +208,6 @@ try { mfState = JSON.parse(readFileSync(mfStatePath, 'utf8')) } catch {}
 const mfSince = Number.isFinite(mfState.lastScanAt) ? mfState.lastScanAt - 60_000 : now - 6 * 3600e3
 const modelFail = { pool: 0, detected: 0, resumed: 0, skipped: 0 }
 if (!dryRun) {
-  const SESSIONS_ROOT = join(HOME, '.dsh', 'sessions')
-  let sessionDirs
-  try { sessionDirs = readdirSync(SESSIONS_ROOT).filter(n => n.startsWith('--')).map(n => join(SESSIONS_ROOT, n)) } catch { sessionDirs = [] }
   const mfPool = all
     .filter(s => !s.running && !s.blank && s.sessionId !== masterId)
     .filter(s => s.updatedAt <= now - GRACE_MIN * 60_000 && s.updatedAt >= mfSince)
@@ -188,11 +220,9 @@ if (!dryRun) {
   for (const s of mfPool) {
     let rows = []
     try {
-      let file = null
-      for (const dir of sessionDirs) { const f = join(dir, s.sessionId, 'session.v4.jsonl.zstd'); if (existsSync(f)) { file = f; break } }
+      const file = transcriptFileOf(s.sessionId)
       if (!file) { modelFail.skipped++; continue }
-      const tail = execFileSync('/opt/homebrew/bin/zstd', ['-dc', file], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
-      rows = tail.split('\n').slice(-400).filter(Boolean).map(l => { try { return JSON.parse(l) } catch { return null } }).filter(Boolean)
+      rows = tailRows(file)
     } catch { modelFail.skipped++; continue }
     const fail = detectModelFailure(rows)
     if (!fail) continue
@@ -240,6 +270,6 @@ try {
 report.via = via
 
 // 先投递成功、后记账；记账失败由 markSeenMany 自己吞掉并提醒（见 seen-set 头注）。
-markSeenMany(seenPath, fresh.map(seenKeyOf), reportTtlMs(), { cap: 50 })
+markSeenMany(seenPath, fresh.map(c => seenKeyOf(c, identity.startedAt)), reportTtlMs(), { cap: 50 })
 try { writeFileSync(join(MUSE_DIR, 'restart-recover.json'), JSON.stringify(report, null, 2)) } catch (e) { console.error('restart-recover: 报告落盘失败', String(e?.message ?? e).slice(0, 120)) }
 console.log('restart-recover: 已上报', fresh.length, '个中断对话（普查', all.length, '会话，通道', via, '）')

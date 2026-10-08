@@ -49,11 +49,43 @@ export function classifyInterrupted(entries, { hostStartedAt = 0, now = Date.now
 }
 
 /**
- * 上报去重键。带 openTurnStartSeq：同一个未收口轮次只打扰一次；
- * 主控把会话推活后该轮收口，若之后又死在新轮次（新 seq）则重新上报。
+ * 上报去重键：会话 + 宿主纪元（议题 832047A82866-2 ②，2026-10-09 修订）。
+ * 旧键带轮次序号，而主控推活会让会话开新轮次（序号变）→ 同一次重启被重复上报（04:16 实测）。
+ * 新键按「哪一次重启」去重：同一会话在同一个宿主纪元内只打扰一次；下次重启（新纪元）再犯会重新上报。
  */
-export function seenKeyOf(c) {
-  return `${c.sessionId}:interrupted-turn:${c.openTurnStartSeq}`
+export function seenKeyOf(c, hostEpoch) {
+  return `${c.sessionId}:interrupted-turn:${hostEpoch ?? c.openTurnStartSeq ?? '?'}`
+}
+
+/**
+ * 旧键一次性迁移：把 seen-set 里 `…:interrupted-turn:<seq>`（seq 是小数字）改写成
+ * `…:interrupted-turn:<宿主纪元>`，时间戳保留——否则换键的当拍，老候选会全部被当新候选重报。
+ * 纪元（宿主启动毫秒）远大于任何 seq，按数量级区分，不做脆弱的格式猜测。
+ */
+export function migrateSeenKeys(entries, hostEpoch) {
+  const EPOCH_SCALE = 1e12
+  return (entries ?? []).map(([key, at]) => {
+    const m = /^(.*):interrupted-turn:(\d+)$/.exec(key)
+    if (!m) return [key, at]
+    const n = Number(m[2])
+    if (n >= EPOCH_SCALE) return [key, at]          // 已是新键
+    return [`${m[1]}:interrupted-turn:${hostEpoch}`, at]
+  })
+}
+
+/**
+ * 转录对账（议题 832047A82866-2 ①）：投影说「轮次未收口」，转录才是真相。
+ * 最后一条 turn/end 的 seq 若已越过 openTurnStartSeq，说明该轮实际收了、只是投影滞后
+ * （2026-10-09 实测误报样本 966c3138：03:40 正常收尾，投影仍非空，被误报）。
+ * 没有任何 turn/end ⇒ 轮次真的开着 ⇒ 仍算中断。
+ */
+export function genuinelyOpen(rows, openTurnStartSeq) {
+  let lastEnd = -1
+  for (let i = rows.length - 1; i >= 0; i--) if (rows[i]?.type === 'turn/end') { lastEnd = i; break }
+  if (lastEnd === -1) return true
+  const seq = rows[lastEnd].seq
+  if (typeof seq !== 'number') return true
+  return seq < openTurnStartSeq
 }
 
 export const REPORT_TTL_MS = { default: 6 * 3600e3, long: 7 * 24 * 3600e3 }

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { rmSync } from 'node:fs'
-import { classifyInterrupted, seenKeyOf, reportTtlMs, detectRestart, buildBrief, REPORT_TTL_MS } from '../lib/restart-recover.mjs'
+import { classifyInterrupted, seenKeyOf, reportTtlMs, detectRestart, buildBrief, REPORT_TTL_MS, migrateSeenKeys, genuinelyOpen } from '../lib/restart-recover.mjs'
 import { seenRecently, markSeen } from '../lib/seen-set.mjs'
 
 const NOW = 1_800_000_000_000
@@ -74,10 +74,40 @@ test('按闲置时长升序（最该先救的排最前）', () => {
   assert.deepEqual(out.map(c => c.sessionId), ['session-b', 'session-a'])
 })
 
-test('去重键含 openTurnStartSeq：同一轮只报一次，新轮重新上报', () => {
+test('去重键按宿主纪元：同一次重启只报一次，推活开新轮不再重报（议题 832047A82866-2 ②）', () => {
+  const EPOCH = 1_791_466_577_000
   const c = { sessionId: 'session-x', openTurnStartSeq: 42 }
-  assert.equal(seenKeyOf(c), 'session-x:interrupted-turn:42')
-  assert.notEqual(seenKeyOf(c), seenKeyOf({ ...c, openTurnStartSeq: 43 }), '推活后再次死在新轮次 → 键变化 → 重新上报')
+  assert.equal(seenKeyOf(c, EPOCH), 'session-x:interrupted-turn:' + EPOCH)
+  // 推活后死在新轮次（seq 43）→ 同纪元同键 → 不再重复上报（旧键会误报）
+  assert.equal(seenKeyOf({ ...c, openTurnStartSeq: 43 }, EPOCH), seenKeyOf(c, EPOCH))
+  // 下一次重启（新纪元）→ 新键 → 重新上报
+  assert.notEqual(seenKeyOf(c, EPOCH), seenKeyOf(c, EPOCH + 60_000))
+})
+
+test('旧键迁移：seq 键改写为纪元键、时间戳保留；已是纪元键的不动', () => {
+  const EPOCH = 1_791_466_577_000
+  const rows = [
+    ['session-a:interrupted-turn:42', 111],
+    ['session-b:interrupted-turn:' + EPOCH, 222],
+    ['session-c:other-signal', 333],
+  ]
+  const out = migrateSeenKeys(rows, EPOCH)
+  assert.deepEqual(out[0], ['session-a:interrupted-turn:' + EPOCH, 111])
+  assert.deepEqual(out[1], ['session-b:interrupted-turn:' + EPOCH, 222])
+  assert.deepEqual(out[2], ['session-c:other-signal', 333])
+})
+
+test('转录对账：turn/end 已越过投影 openTurnStartSeq → 投影滞后，不算中断（议题 …-2 ①）', () => {
+  // 误报样本 966c3138：投影非空，实际 03:40 已正常收尾（turn/end seq 越过 openTurn）
+  const closed = [
+    { type: 'turn/end', seq: 275 },
+    { type: 'step/start', seq: 276 },
+  ]
+  assert.equal(genuinelyOpen(closed, 250), false, '已收尾 → 不算中断')
+  // 真中断：转录里没有任何 turn/end
+  assert.equal(genuinelyOpen([{ type: 'step/start', seq: 300 }], 250), true, '无 turn/end → 轮次真开着')
+  // 上一轮收在 openTurn 之前（比 openTurn 更早的收口）→ 轮次仍开着
+  assert.equal(genuinelyOpen([{ type: 'turn/end', seq: 240 }], 250), true, '旧收口不覆盖本轮')
 })
 
 test('压制窗 7 天：同一未收口轮次 6 小时后仍被压制', () => {
