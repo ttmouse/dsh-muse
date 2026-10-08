@@ -40,6 +40,7 @@ keeper 会武装目标；把 goal-pool.json 的 armed 目标贴给它确认即�
 
 ### 4. 重生 ops-warden 成员（1 句话）
 对新 Muse 说：「重建 ops-warden 常驻运维成员」（charter 正本：~/.dsh/muse/ops-warden-charter.md，spawn prompt 直接用其正文；2026-10-07 修正——原指向 retro 文档「成员模板节」不存在）。
+（2026-10-08 实测后注：不需要登记成员会话 id——外部脚本不能注入成员会话，成员也拿不到调度工具，「成员转达巡查报告」这条路当前平台不可行；巡查投递方式见 examples/stall-patrol.mjs 的「投递通道」注释。）
 
 ## 旧对话的处置
 
