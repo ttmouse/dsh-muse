@@ -15,9 +15,9 @@
 
 ## 需要在新对话重建（约 5 分钟）
 
-### 1. 恢复目标模式（1 句话）
-新对话里说：**「继续」+ 简述目标**（例如「继续打磨 dsh-muse，目标池在 ~/.dsh/muse/goal-pool.json」）。
-keeper 会武装目标；把 goal-pool.json 的 armed 目标贴给它确认即可。
+### 1. 恢复目标模式（2026-10-09 起自动；自治需一词确认）
+**目标**：交接简报已指示新主控首轮自动挂载目标池 armed（角色级目标模式，用户 2026-10-09 拍板；登记 ~/.dsh/muse/master-role.json），无需人工。
+**常驻自治**：平台的授权人证要求人类消息属于本会话（muse/src/intent-store.ts agentAutonomy），**无法跨会话继承**——新主控首轮会发一张卡向你求一词确认（回「继续」即 muse_autonomy(true)）。这是角色级方案里唯一保留的人工步骤，一句话可撤。
 
 ### 2. 重建 4 个调度（各 1 次 schedule_create）
 - **9:30 每日对标审查**：web_search Muse 新细节 + Today.app 版本监测 + 清单核对（prompt 见旧对话或按 docs/capability-checklist.md 语义重建）

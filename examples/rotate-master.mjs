@@ -36,7 +36,7 @@ if (process.argv.includes('--dry-run')) {
   console.log(`rotate(dry-run): today=${today} state.date=${state.date || '(空)'} state.master=${state.masterSession || '(空)'}`)
   console.log(state.date === today
     ? 'rotate(dry-run): 将跳过（今日已轮换）'
-    : `rotate(dry-run): 将新建主会话 + 清理卸任会话 ${state.masterSession || '(无)'} 的 ${n} 条调度 + 注入简报 + 重指 5 plist + 落盘`)
+    : `rotate(dry-run): 将新建主会话 + 清理卸任会话 ${state.masterSession || '(无)'} 的 ${n} 条调度 + 注入简报 + 重指 6 plist + 落盘`)
   process.exit(0)
 }
 
@@ -85,7 +85,7 @@ const brief = `【晨间交接——你是今天的主控 Muse】（${today}）
 新的一天，主对话已为你备好。上下文要点：
 1. 目标池（~/.dsh/muse/goal-pool.json，用户全部长期目标）：armed = ${pool.armed?.goal ?? 'dsh-muse 打磨'}；queued ${pool.queued?.length ?? 0} 个见文件
 2. 关键人（老婆/青山/菜花/轮子，注册表 ~/.dsh/muse/key-people.json）与全部纪律已在你收到的记忆注入中
-3. 开工动作（按 docs/master-session-rotation.md）：用 schedule_create 重建 4 个调度（9:30 对标 / 20:35 总结 / 周日 20:10 周报 / 周日 21:00 元复盘，prompt 在手册附录 A-D）；按 ~/.dsh/muse/ops-warden-charter.md 用 spawn_teammate 重生 ops-warden 成员（ops-warden-trigger 的 plist 已重指本会话，9:05 路由到无成员会话会空转）；goal 挂载等用户首条消息授权，无事时按轮次纪律置 blocked 进守望
+3. 开工动作（按 docs/master-session-rotation.md）：用 schedule_create 重建 4 个调度（9:30 对标 / 20:35 总结 / 周日 20:10 周报 / 周日 21:00 元复盘，prompt 在手册附录 A-D）；按 ~/.dsh/muse/ops-warden-charter.md 用 spawn_teammate 重生 ops-warden 成员（ops-warden-trigger 的 plist 已重指本会话，9:05 路由到无成员会话会空转）；随即用 create_goal 挂载目标池 armed（角色级目标模式：用户 2026-10-09 已拍板，登记在 ~/.dsh/muse/master-role.json——目标文本连同其【轮次纪律】一起写入）；目标挂好后，向用户发首张卡请求一词确认常驻自治（「继续」即可，muse_autonomy(true)）——自治的人证是平台设计、无法跨会话继承，这是角色级方案里唯一保留的人工步骤；无事时按轮次纪律置 blocked 进守望
 4. 用户偏好：中文、简洁、静默=主对话零消息、白天自测可围观、诚实不编造
 5. 前一天的工作档案：demo-journal.md 与 docs/evolution/（21 轮账本）
 
