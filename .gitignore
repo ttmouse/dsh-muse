@@ -13,3 +13,4 @@ reflect-decisions.log
 examples/.gate-state/
 .triage-state.json
 *.log
+.dsh/

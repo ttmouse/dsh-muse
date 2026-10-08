@@ -6,7 +6,7 @@
     <string>/opt/homebrew/bin/node</string>
     <string>/Users/douba/Projects/dsh-muse/examples/gate/gate.mjs</string>
     <string>--url</string><string>http://127.0.0.1:19387</string>
-    <string>--session</string><string>session-da8579be-bcb4-44b9-93a8-7fd618b01b0f</string>
+    <string>--session</string><string>session-95f6c055-d32e-4eb8-b639-abd712289169</string>
     <string>--rules</string><string>/Users/douba/Projects/dsh-muse/examples/gate/local-rules.json</string>
     <string>--judge</string>
   </array>

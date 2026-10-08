@@ -8,7 +8,7 @@
   </array>
   <key>WorkingDirectory</key><string>/Users/douba/Projects/dsh-muse</string>
   <key>EnvironmentVariables</key><dict>
-    <key>MUSE_SESSION_ID</key><string>session-da8579be-bcb4-44b9-93a8-7fd618b01b0f</string>
+    <key>MUSE_SESSION_ID</key><string>session-95f6c055-d32e-4eb8-b639-abd712289169</string>
     <key>MUSE_URL</key><string>http://127.0.0.1:19387</string>
   </dict>
   <key>StartInterval</key><integer>3600</integer>
