@@ -244,7 +244,9 @@ if (!dryRun) {
 }
 report.modelFail = modelFail
 
-if (!fresh.length && !modelFail.resumed) {
+// 未收口候选为零 ⇒ 本拍没有要报的名单，直接静默（模型失败扫描是独立通道，已在上面自行注入，
+// 不应影响这里；2026-10-09 修订：先前误把「有模型失败恢复」当豁免条件，导致投出过一次空名单）。
+if (!fresh.length) {
   report.detail = candidates   // 静默拍也留清单：主控随时能核查「被压制的到底是谁」
   try { writeFileSync(join(MUSE_DIR, 'restart-recover.json'), JSON.stringify(report, null, 2)) } catch (e) { console.error('restart-recover: 报告落盘失败', String(e?.message ?? e).slice(0, 120)) }
   // 三种「没得报」要说清是哪一种，否则日志把「压根没扫到中断对话」错说成「已报过」，

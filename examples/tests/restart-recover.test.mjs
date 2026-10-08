@@ -171,10 +171,10 @@ test('普查阶段必须自带防线：session/list 的 await 被 try/catch 包�
 test('零候选短路：不投递，且日志区分「无中断对话」与「已报过」', async () => {
   const { readFileSync } = await import('node:fs')
   const src = readFileSync(new URL('../restart-recover.mjs', import.meta.url), 'utf8')
-  // 2026-10-09 修订：模型类失败恢复（议题 832047A82866-4）引入第二条「有活干」路径——
-  // 零候选但注入过换模型恢复时不得静默退出，契约条件随之扩展。
-  const at = src.indexOf('if (!fresh.length && !modelFail.resumed) {')
-  assert.notEqual(at, -1, '零候选短路分支应存在（含模型失败恢复豁免）')
+  // 2026-10-09 二次修订：模型失败扫描是独立通道、自行注入并自行退出；未收口候选为零时
+  // 必须静默退出——曾误加「!modelFail.resumed」豁免条件，投出过一次空名单卡片。
+  const at = src.indexOf('if (!fresh.length) {')
+  assert.notEqual(at, -1, '零候选短路分支应存在')
   const branchEnd = src.indexOf('process.exit(0)', at)
   assert.notEqual(branchEnd, -1, '短路分支必须 exit 0')
   const branch = src.slice(at, branchEnd)
