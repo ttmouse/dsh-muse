@@ -20,10 +20,11 @@
  * launchd 传参：无（环境变量 MUSE_SESSION_ID=主控会话, MUSE_URL）。
  * --dry-run 只打印计划零注入（有副作用的脚本诞生即带降落伞）。
  */
-import { callRpc, injectPrompt } from './lib/dsh-client.mjs'
+import { callRpc } from './lib/dsh-client.mjs'
+import { deliverToMaster } from './lib/master-channel.mjs'
 import { seenRecently, markSeen } from './lib/seen-set.mjs'
 import { classifySessions, reportKey, reportTtlMs } from './lib/stall-classify.mjs'
-import { readFileSync, writeFileSync, mkdirSync, readdirSync } from 'node:fs'
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
@@ -73,36 +74,10 @@ if (!fresh.length) {
 // 上报主控：判断权在主控（能否自动推活取决于各会话授权状态；blocked 类只能转告用户）
 const lines = fresh.map(c => `- ${c.sessionId}｜${c.kind}${c.canonical === false ? '（同目标重复会话，勿推活，留档待归档）' : ''}｜闲置 ${c.idleMin} 分钟｜${c.title}｜cwd ${c.cwd}`)
 const brief = `【主控巡查·断线候选】${fresh.length} 个会话疑似中断停转（阈值 ${IDLE_MIN} 分钟，窗口 ${WINDOW_H}h，普查 ${all.length} 会话）：\n${lines.join('\n')}\n判断与处置：canonical 的 stalled-goal/stalled-todos/stalled-inbox → 用 session/prompt 注入「继续」推动续跑并 journal 记一行；blocked-goal → 平台边界内不能代劳 resume，等用户本人发话；duplicate-goal → 不推活。处置完无需向用户逐条汇报，除非出现 A 类（目标分叉/数据风险/机制失效）。`
-/* 投递通道（2026-10-08）：主控会话持有常驻自治时，走站内信箱由 keeper 注入——主控侧渲染为
- * 折叠卡片「收到执行请求」，与人类输入在视觉上分开；未授权时回退直投主控（session/prompt），
- * 呈现为普通消息。平台限制（实测）：外部脚本不能注入成员会话（agent-busy: owned by subagent
- * routing），成员会话也拿不到调度工具（只注册给根智能体），所以「成员转达」这条路当前不可行。 */
-const intentsDir = join(HOME, '.dsh', 'muse', 'intents')
-let latestAutonomy
-try {
-  for (const name of readdirSync(intentsDir).filter(n => n.endsWith('.json'))) {
-    try {
-      const rec = JSON.parse(readFileSync(join(intentsDir, name), 'utf8'))
-      if (rec?.sessionId !== masterId) continue
-      if (!latestAutonomy || (rec.updatedAt ?? 0) > (latestAutonomy.updatedAt ?? 0)) latestAutonomy = rec
-    } catch {}
-  }
-} catch {}
-
-let deliveredVia = 'master'
-if (latestAutonomy?.autonomy === true) {
-  try {
-    await injectPrompt(URL_, masterId, brief, 'notice')
-    deliveredVia = 'notice'
-  } catch { deliveredVia = 'master' }
-}
-if (deliveredVia === 'master') {
-  await callRpc(URL_, 'session/prompt', {
-    requestId: `stall-patrol-${Date.now()}`,
-    sessionId: masterId, mode: 'queue',
-    content: [{ type: 'text', text: brief }],
-  })
-}
+/* 投递通道见 examples/lib/master-channel.mjs（2026-10-08 抽出与 restart-recover 共用）：
+ * 主控持有常驻自治时走站内信箱（keeper 注入，渲染为折叠卡片「收到执行请求」），
+ * 未授权则回退直投主控（session/prompt）。 */
+const deliveredVia = await deliverToMaster({ url: URL_, home: HOME, masterId, brief, tag: 'stall-patrol' })
 
 for (const c of fresh) markSeen(seenPath, reportKey(c), reportTtlMs(c), { cap: 50 })
 mkdirSync(join(HOME, '.dsh', 'muse'), { recursive: true })

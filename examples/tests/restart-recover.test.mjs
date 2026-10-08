@@ -1,0 +1,109 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { rmSync } from 'node:fs'
+import { classifyInterrupted, seenKeyOf, reportTtlMs, detectRestart, buildBrief, REPORT_TTL_MS } from '../lib/restart-recover.mjs'
+import { seenRecently, markSeen } from '../lib/seen-set.mjs'
+
+const NOW = 1_800_000_000_000
+const HOST_START = NOW - 60 * 60_000 // 宿主一小时前启动
+const min = m => NOW - m * 60_000
+
+/** 会话条目工厂：默认「宿主启动前就开着轮次、闲置 2 小时」= 应入选；override 覆盖字段。 */
+function entry(over = {}) {
+  return {
+    sessionId: 'session-' + Math.random().toString(16).slice(2, 10),
+    updatedAt: min(120),
+    running: false, blank: false, cwd: '/tmp',
+    title: '普通工作会话',
+    openTurnStartSeq: 4,
+    openStep: true,
+    ...over,
+  }
+}
+const opts = { hostStartedAt: HOST_START, now: NOW, masterId: 'session-m', windowH: 72 }
+
+test('真样本形状入选：轮次开在重启前、从未收口（session-e6fe5d11 线上样本）', () => {
+  const out = classifyInterrupted([entry({ sessionId: 'session-e6fe5d11', title: '梳理插件相关实现与实际效果' })], opts)
+  assert.equal(out.length, 1)
+  assert.equal(out[0].kind, 'interrupted-turn')
+  assert.equal(out[0].openTurnStartSeq, 4)
+  assert.equal(out[0].openStep, true)
+})
+
+test('轮次已收口（openTurnStartSeq 为 null）不入选——闭环会话不得误报', () => {
+  assert.equal(classifyInterrupted([entry({ openTurnStartSeq: null })], opts).length, 0)
+  assert.equal(classifyInterrupted([entry({ openTurnStartSeq: undefined })], opts).length, 0)
+})
+
+test('running=true（正在执行）与 blank 排除', () => {
+  assert.equal(classifyInterrupted([entry({ running: true })], opts).length, 0)
+  assert.equal(classifyInterrupted([entry({ blank: true })], opts).length, 0)
+})
+
+test('本纪元内开的新轮不算重启遗留（updatedAt >= 宿主启动时间）', () => {
+  const inEpoch = entry({ updatedAt: NOW - 5 * 60_000 }) // 宿主启动之后
+  assert.equal(classifyInterrupted([inEpoch], opts).length, 0)
+  // 恰好等于宿主启动时刻：不属于「早于」，不入选
+  assert.equal(classifyInterrupted([entry({ updatedAt: HOST_START })], opts).length, 0)
+})
+
+test('宽限与窗口边界：刚发生的不判定、超过窗口的不打扰', () => {
+  assert.equal(classifyInterrupted([entry({ updatedAt: NOW - 60_000 })], opts).length, 0, '1 分钟前刚死，留宽限')
+  assert.equal(classifyInterrupted([entry({ updatedAt: min(73 * 60) })], opts).length, 0, '73 小时前超窗')
+  const edge = classifyInterrupted([entry({ updatedAt: min(72 * 60) })], opts)
+  assert.equal(edge.length, 1, '窗口边缘仍入选')
+})
+
+test('主控自身与已退役/已废弃/已归档标题排除', () => {
+  const out = classifyInterrupted([
+    entry({ sessionId: 'session-m' }),
+    entry({ title: '【已退役·前主控】Muse 旧主控' }),
+    entry({ title: '【已废弃】某会话' }),
+    entry({ title: '【已归档】某会话' }),
+  ], opts)
+  assert.equal(out.length, 0)
+})
+
+test('按闲置时长升序（最该先救的排最前）', () => {
+  const out = classifyInterrupted([
+    entry({ sessionId: 'session-a', updatedAt: min(600) }),
+    entry({ sessionId: 'session-b', updatedAt: min(90) }),
+  ], opts)
+  assert.deepEqual(out.map(c => c.sessionId), ['session-b', 'session-a'])
+})
+
+test('去重键含 openTurnStartSeq：同一轮只报一次，新轮重新上报', () => {
+  const c = { sessionId: 'session-x', openTurnStartSeq: 42 }
+  assert.equal(seenKeyOf(c), 'session-x:interrupted-turn:42')
+  assert.notEqual(seenKeyOf(c), seenKeyOf({ ...c, openTurnStartSeq: 43 }), '推活后再次死在新轮次 → 键变化 → 重新上报')
+})
+
+test('压制窗 7 天：同一未收口轮次 6 小时后仍被压制', () => {
+  assert.equal(reportTtlMs(), REPORT_TTL_MS.long)
+  const statePath = join(tmpdir(), `restart-recover-seen-${process.pid}-${Math.random().toString(16).slice(2)}.json`)
+  try {
+    const key = seenKeyOf({ sessionId: 'session-y', openTurnStartSeq: 7 })
+    assert.equal(seenRecently(statePath, key, reportTtlMs()), false)
+    markSeen(statePath, key, reportTtlMs())
+    assert.equal(seenRecently(statePath, key, reportTtlMs(), { now: Date.now() + 6 * 3600e3 }), true)
+  } finally { rmSync(statePath, { force: true }) }
+})
+
+test('重启判定：首次运行不算重启；pid 变化算；pid 复用但启动时间变算', () => {
+  const cur = { pid: 48109, startedAt: NOW }
+  assert.deepEqual(detectRestart(undefined, cur), { changed: false, reason: 'no-identity' })
+  assert.equal(detectRestart({ pid: 48081, startedAt: NOW - 1000 }, cur).changed, true)
+  assert.equal(detectRestart({ pid: 48109, startedAt: NOW }, cur).changed, false)
+  assert.equal(detectRestart({ pid: 48109, startedAt: NOW - 999 }, cur).reason, 'pid-reused-new-start')
+})
+
+test('简报文本含会话 id/闲置分钟/标题，且带上处置口径', () => {
+  const brief = buildBrief([{ sessionId: 'session-e6fe5d11', idleMin: 1250, openStep: true, title: '梳理插件实现', cwd: '/Users/douba/Projects/dsh-muse' }], { total: 874, scanned: 12, restart: { changed: true, reason: 'pid-changed' }, windowH: 72 })
+  assert.match(brief, /session-e6fe5d11/)
+  assert.match(brief, /1250 分钟/)
+  assert.match(brief, /梳理插件实现/)
+  assert.match(brief, /session\/prompt/)
+  assert.match(brief, /pid-changed/)
+})

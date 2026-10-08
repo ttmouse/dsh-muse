@@ -37,6 +37,9 @@ keeper 会武装目标；把 goal-pool.json 的 armed 目标贴给它确认即�
 - examples/reflect.plist 的 --session 参数同样改新 id 并重载（反思循环注入主会话；2026-10-08 入库并纳入轮换清单——此前装在 ~/Library/LaunchAgents 且 --session 自 10-5 起固定指旧会话 2d91d053，反思产出的提议投进无人读的会话，与 gate 同因漏网；实证见 retro 日常复盘记录 2026-10-08 09:0x 条）：
 `launchctl bootout gui/$(id -u)/com.dsh-muse.reflect; launchctl bootstrap gui/$(id -u) ~/Projects/dsh-muse/examples/reflect.plist`
 （漏改则 A 类注入打向旧会话，旧会话关闭后静默失败；2026-10-07 分诊复核补记。另：StartCalendarInterval 注册会失效——重载即修，2026-10-07 实证：分诊任务加载后 runs=0 三次日历点未触发，bootout+bootstrap 后注册恢复，另用临时探针证明当日历投递本身正常。）
+- examples/restart-recover.plist 的 MUSE_SESSION_ID 同样改新 id 并重载（重启恢复：桌面客户端重启/到点后，把「重启之前进行中、但从未收口」的对话报给主控恢复；2026-10-08 上线，`RunAtLoad` + 每 10 分钟一拍，身份比对无重启时零副作用）：
+`launchctl bootout gui/$(id -u)/com.dsh-muse.restart-recover; launchctl bootstrap gui/$(id -u) ~/Projects/dsh-muse/examples/restart-recover.plist`
+（rotate-master 已于同次上线纳入清单，每日 08:00 自动重指——清单现共 6 个 plist。）
 
 ### 4. 重生 ops-warden 成员（1 句话）
 对新 Muse 说：「重建 ops-warden 常驻运维成员」（charter 正本：~/.dsh/muse/ops-warden-charter.md，spawn prompt 直接用其正文；2026-10-07 修正——原指向 retro 文档「成员模板节」不存在）。

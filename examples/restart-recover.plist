@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.dsh-muse.restart-recover</string>
+  <key>ProgramArguments</key><array>
+    <string>/opt/homebrew/bin/node</string>
+    <string>/Users/douba/Projects/dsh-muse/examples/restart-recover.mjs</string>
+  </array>
+  <key>WorkingDirectory</key><string>/Users/douba/Projects/dsh-muse</string>
+  <key>EnvironmentVariables</key><dict>
+    <key>MUSE_SESSION_ID</key><string>session-95f6c055-d32e-4eb8-b639-abd712289169</string>
+    <key>MUSE_URL</key><string>http://127.0.0.1:19387</string>
+  </dict>
+  <key>RunAtLoad</key><true/>
+  <key>StartInterval</key><integer>600</integer>
+  <key>StandardOutPath</key><string>/tmp/dsh-muse-restart-recover.log</string>
+  <key>StandardErrorPath</key><string>/tmp/dsh-muse-restart-recover.log</string>
+</dict></plist>
