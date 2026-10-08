@@ -121,6 +121,13 @@ test('压制窗 7 天：同一未收口轮次 6 小时后仍被压制', () => {
   } finally { rmSync(statePath, { force: true }) }
 })
 
+test('简报口径与新去重语义一致（防止文案回退到旧轮次序号说法）', () => {
+  const brief = buildBrief([{ sessionId: 'session-x', idleMin: 40, title: 't', cwd: '/tmp', openTurnStartSeq: 5 }], { total: 9, scanned: 8 })
+  assert.match(brief, /去重按「会话\+宿主纪元」7 天/)
+  assert.match(brief, /主控会先转录对账再处置/)
+  assert.doesNotMatch(brief, /按 openTurnStartSeq 去重/)
+})
+
 test('重启判定：首次运行不算重启；pid 变化算；pid 复用但启动时间变算', () => {
   const cur = { pid: 48109, startedAt: NOW }
   assert.deepEqual(detectRestart(undefined, cur), { changed: false, reason: 'no-identity' })

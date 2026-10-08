@@ -116,8 +116,8 @@ export function buildBrief(candidates, { total = 0, scanned = 0, restart = { cha
   return [
     `【重启恢复·中断对话】${lead}，发现 ${candidates.length} 个「进行中、但从未收口」的对话（普查 ${total} 会话，含投影缓存 ${scanned} 个，回溯窗 ${windowH}h）：`,
     ...lines,
-    '判定依据：会话投影 turnBoundary.openTurnStartSeq 非空（轮次已开始但从未写入 turn/end）且最后活动早于当前宿主进程启动时间——即这一轮死在重启里。',
-    '处置口径：逐个判断是否仍要继续——仍然相关就用 session/prompt 注入「继续」推动续跑（同 stall-patrol 的推活口径）并 journal 记一行；超过 24 小时或话题已过期的，只向用户一句话点出、由用户决定，不要盲目唤醒。已按 openTurnStartSeq 去重 7 天，同一轮次不会重复上报。',
+    '判定依据：会话投影 turnBoundary.openTurnStartSeq 非空（轮次已开始但从未写入 turn/end）且最后活动早于当前宿主进程启动时间——即这一轮死在重启里；主控会先转录对账再处置。',
+    '处置口径：逐个判断是否仍要继续——仍然相关就用 session/prompt 注入「继续」推动续跑（同 stall-patrol 的推活口径）并 journal 记一行；超过 24 小时或话题已过期的，只向用户一句话点出、由用户决定，不要盲目唤醒。去重按「会话+宿主纪元」7 天：同一次重启只打扰一次，推活开新轮不会重报。',
   ].join('\n')
 }
 
