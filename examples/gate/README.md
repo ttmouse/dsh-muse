@@ -91,7 +91,9 @@ node gate.mjs --session <sessionId> [--url http://127.0.0.1:3080] [--rules rules
 ./set-cadence-all.sh 1800 3600  # 睡觉时放慢：gate 30 分钟、reflect 1 小时
 ```
 
-会话 id 与端口在 `gate/local-config.env`。launchd 日志：`/tmp/dsh-muse-gate.log`、`/tmp/dsh-muse-reflect.log`。
+会话 id 由调频脚本自动取权威登记 `~/.dsh/muse/master-session.json`（rotate-master 每日维护）；端口在 `gate/local-config.env`，其中的会话 id 仅作登记缺失时的兜底。launchd 日志：`/tmp/dsh-muse-gate.log`、`/tmp/dsh-muse-reflect.log`。
+
+plist 正本在仓库内 `examples/gate.plist`、`examples/reflect.plist`，launchd 直接从该路径加载；`~/Library/LaunchAgents` 下的旧副本会在调频时被停用并改名（`.legacy-<时间戳>`），避免登录时被自动加载而回退到旧会话（2026-10-07 gate、2026-10-08 reflect 两次注入漂移同源）。
 
 决策日志（`gate-decisions.log` / `reflect-decisions.log`）已**元数据化**：`examples/muse-status.sh` 只显示日志的修改时间和行数（content hidden），不再打印消息内容——避免把巡逻细节/注入内容泄漏到状态输出里；要看内容需直接打开日志文件。
 IMAP 邮件源：在 `gate/local-rules.json` 加 `{"type":"imap","host":"imap.gmail.com","port":993,"user":"你@gmail.com","passwordRef":"MUSE_IMAP_PASSWORD","markSeen":true}`，密码存 `~/.dsh/.credentials.yaml` 的 `MUSE_IMAP_PASSWORD:` 键。
