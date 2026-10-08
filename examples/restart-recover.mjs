@@ -26,7 +26,7 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { callRpc } from './lib/dsh-client.mjs'
 import { deliverToMaster } from './lib/master-channel.mjs'
-import { seenRecently, markSeen } from './lib/seen-set.mjs'
+import { seenRecently, markSeen, markSeenMany } from './lib/seen-set.mjs'
 import { classifyInterrupted, seenKeyOf, reportTtlMs, buildBrief, detectRestart } from './lib/restart-recover.mjs'
 
 const URL_ = process.env.MUSE_URL ?? 'http://127.0.0.1:19387'
@@ -74,14 +74,27 @@ try { prevIdentity = JSON.parse(readFileSync(identityPath, 'utf8')) } catch {}
 const restart = detectRestart(prevIdentity, identity)
 
 // ---- 全量分页普查 ----
+// 宿主未就绪（刚重启、19387 无响应）时 callRpc 会在 15 秒超时抛 DOMException——
+// 这是主流程第一处 await，不加防线就整脚本崩栈、退出码非 0。本拍跳过即可：
+// 不写状态、不记账，下一个 10 分钟周期自然重试。
+// 2026-10-08 实测样本：宿主 20:15 重启后一段时间 19387 不响应，日志连出两次 DOMException 堆栈。
 let cursor, all = [], pages = 0
-do {
-  const res = await callRpc(URL_, 'session/list', cursor ? { cursor: String(cursor) } : {})
-  const items = Array.isArray(res?.items) ? res.items : []
-  all = all.concat(items)
-  cursor = res?.hasMore ? res.cursor : undefined
-  if (++pages > 50) break
-} while (cursor)
+try {
+  do {
+    const res = await callRpc(URL_, 'session/list', cursor ? { cursor: String(cursor) } : {})
+    const items = Array.isArray(res?.items) ? res.items : []
+    all = all.concat(items)
+    cursor = res?.hasMore ? res.cursor : undefined
+    if (++pages > 50) break
+  } while (cursor)
+} catch (e) {
+  console.error(`restart-recover: 宿主未就绪，本拍跳过（${String(e?.message ?? e).slice(0, 160)}）`)
+  process.exit(0)
+}
+if (!all.length) {
+  console.error('restart-recover: 会话列表为空（宿主可能正在启动），本拍跳过')
+  process.exit(0)
+}
 
 // ---- 只对「可能入选」的会话读投影缓存（749 个文件全读没必要）----
 const now = Date.now()
@@ -137,20 +150,39 @@ mkdirSync(MUSE_DIR, { recursive: true })
 writeFileSync(identityPath, JSON.stringify({ ...identity, recordedAt: new Date().toISOString() }, null, 2))
 
 const seenPath = join(MUSE_DIR, 'restart-recover-seen.json')
-const fresh = candidates.filter(c => !seenRecently(seenPath, seenKeyOf(c), reportTtlMs()))
+// 去重集读取失败时按空集处理（seenRecently 内部已容错），但要留痕：
+// 读不到会让同一批候选再报一次，与 stall-patrol 的「静默退出」日志形状不同，便于事后分辨。
+let fresh
+try {
+  fresh = candidates.filter(c => !seenRecently(seenPath, seenKeyOf(c), reportTtlMs()))
+} catch (e) {
+  console.error(`restart-recover: 去重集不可用（${String(e?.message ?? e).slice(0, 120)}），本拍按空集处理`)
+  fresh = candidates
+}
 report.reported = fresh.length
 report.suppressed = candidates.length - fresh.length
 
 if (!fresh.length) {
-  writeFileSync(join(MUSE_DIR, 'restart-recover.json'), JSON.stringify(report, null, 2))
+  try { writeFileSync(join(MUSE_DIR, 'restart-recover.json'), JSON.stringify(report, null, 2)) } catch (e) { console.error('restart-recover: 报告落盘失败', String(e?.message ?? e).slice(0, 120)) }
   console.log('restart-recover: 候选', candidates.length, '（去重窗内已报过），静默退出')
   process.exit(0)
 }
 
 const brief = buildBrief(fresh, { total: all.length, scanned, restart, windowH: WINDOW_H })
-const via = await deliverToMaster({ url: URL_, home: HOME, masterId, brief, tag: 'restart-recover' })
+// 投递失败绝不当成已报：退回未标记状态，下一拍重试（否则这一批中断对话静默丢失）。
+let via
+try {
+  via = await deliverToMaster({ url: URL_, home: HOME, masterId, brief, tag: 'restart-recover' })
+} catch (e) {
+  report.via = 'failed'
+  report.error = String(e?.message ?? e).slice(0, 200)
+  try { writeFileSync(join(MUSE_DIR, 'restart-recover.json'), JSON.stringify(report, null, 2)) } catch {}
+  console.error(`restart-recover: 投递失败，本拍不记账、下一拍重试——${report.error}`)
+  process.exit(0)
+}
 report.via = via
 
-for (const c of fresh) markSeen(seenPath, seenKeyOf(c), reportTtlMs(), { cap: 50 })
-writeFileSync(join(MUSE_DIR, 'restart-recover.json'), JSON.stringify(report, null, 2))
+// 先投递成功、后记账；记账失败由 markSeenMany 自己吞掉并提醒（见 seen-set 头注）。
+markSeenMany(seenPath, fresh.map(seenKeyOf), reportTtlMs(), { cap: 50 })
+try { writeFileSync(join(MUSE_DIR, 'restart-recover.json'), JSON.stringify(report, null, 2)) } catch (e) { console.error('restart-recover: 报告落盘失败', String(e?.message ?? e).slice(0, 120)) }
 console.log('restart-recover: 已上报', fresh.length, '个中断对话（普查', all.length, '会话，通道', via, '）')

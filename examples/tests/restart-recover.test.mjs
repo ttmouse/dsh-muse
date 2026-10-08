@@ -107,3 +107,23 @@ test('简报文本含会话 id/闲置分钟/标题，且带上处置口径', () 
   assert.match(brief, /session\/prompt/)
   assert.match(brief, /pid-changed/)
 })
+
+// 2026-10-08 事故回归：宿主 20:15 重启后 19387 不响应，callRpc 15 秒超时抛 DOMException，
+// 崩在主流程第一处 await（普查分页），整脚本退出码非 0、日志连出堆栈。
+// 这里盯住「普查失败 = 静默跳过」这条契约：脚本源码不得再出现裸的 await callRpc(session/list)。
+test('普查阶段必须自带防线：session/list 的 await 被 try/catch 包住且失败即 exit 0', async () => {
+  const { readFileSync } = await import('node:fs')
+  const src = readFileSync(new URL('../restart-recover.mjs', import.meta.url), 'utf8')
+  const at = src.indexOf("callRpc(URL_, 'session/list'")
+  assert.notEqual(at, -1, '普查调用应存在')
+  // 往前找最近的 try {，往后确认同一块里有 catch → exit 0
+  const head = src.slice(0, at)
+  const tryIdx = head.lastIndexOf('try {')
+  assert.notEqual(tryIdx, -1, '普查调用必须在 try 块内')
+  const tail = src.slice(at)
+  const catchIdx = tail.indexOf('catch')
+  assert.notEqual(catchIdx, -1, '普查失败必须有 catch')
+  const guard = tail.slice(catchIdx, catchIdx + 400)
+  assert.match(guard, /宿主未就绪/, 'catch 里要写明「宿主未就绪」')
+  assert.match(guard, /process\.exit\(0\)/, 'catch 里必须干净退出，不得抛栈')
+})
