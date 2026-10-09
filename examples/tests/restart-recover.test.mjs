@@ -221,6 +221,17 @@ test('正常收尾 / 无 turn/end / 非模型错误 → 都不命中', () => {
   assert.equal(detectModelFailure([ev('user/message', {}, 1)]), null)
 })
 
+test('模型故障扫描不得排除「未收口名单」里的会话（叠加故障：死模型+未收口）', async () => {
+  const { readFileSync } = await import('node:fs')
+  const src = readFileSync(new URL('../restart-recover.mjs', import.meta.url), 'utf8')
+  const at = src.indexOf('const mfPool = all')
+  assert.notEqual(at, -1)
+  const pool = src.slice(at, src.indexOf('.slice(0, MODEL_FAIL_CAP)', at))
+  // 2026-10-09 实证：session-cd943dbf 09:00 推活失败，根因是 09:02 额度错误；
+  // 旧代码的 !fresh 过滤让它既不在未收口处置里被换模型、也不进模型故障名单。
+  assert.doesNotMatch(pool, /!fresh\.some/, '不得用 fresh 名单排除模型故障候选')
+})
+
 test('去重键按会话+出错轮次；简报按错误签名折叠同因会话、不含整段错误原文刷屏', () => {
   assert.equal(modelFailKey('session-a', 100), 'session-a:model-fail:100')
   assert.notEqual(modelFailKey('session-a', 100), modelFailKey('session-a', 200))

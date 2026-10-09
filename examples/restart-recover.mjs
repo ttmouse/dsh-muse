@@ -211,11 +211,13 @@ const mfSince = Number.isFinite(mfState.lastScanAt) ? mfState.lastScanAt - 60_00
 const modelFail = { pool: 0, detected: 0, news: 0, skipped: 0 }
 const mfNews = []
 if (!dryRun) {
+  // 2026-10-09 三次修订：不再排除「已在未收口名单里」的会话——叠加故障（轮次死在重启里 + 最后一轮
+  // 收在额度错误）此前被 .filter(!fresh) 漏掉，表现为「推活无效」：会话一被唤醒就又撞同一个死模型。
+  // 实证 session-cd943dbf（09:00 推活失败，根因是 09:02 PI_AI_ERROR）。
   const mfPool = all
     .filter(s => !s.running && !s.blank && s.sessionId !== masterId)
     .filter(s => s.updatedAt <= now - GRACE_MIN * 60_000 && s.updatedAt >= mfSince)
     .filter(s => !/已退役|已废弃|已归档/.test(s.projections?.values?.title ?? ''))
-    .filter(s => !fresh.some(c => c.sessionId === s.sessionId))
     .sort((a, b) => b.updatedAt - a.updatedAt)
     .slice(0, MODEL_FAIL_CAP)
   modelFail.pool = mfPool.length
