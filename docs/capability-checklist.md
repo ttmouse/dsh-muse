@@ -87,6 +87,15 @@
 - **隐私反差继续拉大**：Meta 称 Muse 数据不用于广告，但除非用户主动退出否则会用于训练未来模型；云端虚拟机与外界隔离，但 Meta 自身仍可访问；计划年内推出机密虚拟机选项（届时 Meta 也无法访问该环境）。→ 强化 I4 叙事：dsh-muse 全本机、零上传、无训练用途；同时把「机密虚拟机」记为观察项——官方在补隐私短板，是我们的对照标尺。
 - **侧边对话可近似（D2 复评）**：Agent Teams 的常驻成员与子代理各自持独立上下文、不污染主线（本机 2026-10-08 实测：运维成员承接分诊复核与机制复盘，主对话零轮次）。→ D2 由 ❌ 调整为 🟡：机制上已能「单话题独立展开」，但还不是界面级的会话分叉，用户无法在聊天里就地开一个侧边话题。
 
+## J2. Connect 2026 软件侧新细节（2026-10-09 对标审查补录）
+
+来源：[3arrafni（2026-09-24，阿语）](https://3arrafni.com/tech-news/meta-muse-custom-avatars-video-chat-transaction-fees)、[the-decoder](https://the-decoder.de/meta-erweitert-ki-agent-muse-und-stellt-charm-audio-glasses-und-vr-brille-vor/)。Today.app 仍 1.21.3（基线一致）。
+
+- **可见化形象（对标 E2）**：Muse 屏幕形象代号 Jolly，用户将可为 Muse 创建专属数字 avatar 并与其视频对话——从文本/语音助手升级为「看得见的角色」。→ 我们的 E2 机制（identity.json 命名权在用户）方向一致；官方把「形象可视化」做成了产品级能力，记为 E2 对标参照（generative-ui 卡片头像是本机的低成本近似路径）。
+- **商业模式（新）**：Muse 免费额度内使用，超出后 Meta 计划按「Muse 替用户执行的交易」抽小额费用——不是订阅制，是把 agent 放进支付路径。→ 印证 F6 交易安全是官方核心路线，我们的 F6 方向与商业逻辑同源。
+- **生态开放（新）**：Muse Gadgets 开源 + 美国订户免费发放 Home Link dongle（[3arrafni](https://www.3arrafni.com/tech-news/meta-muse-gadgets-home-link)）。→ 硬件入口层，G 节结论不变。
+- **隐私双面（强化 I4/F5 教训）**：Meta 澄清 Mac 版 Muse 读 Messages 是选择性加入（opt-in，需显式授权），否认此前「私读」指控；但另一案例中 Muse 在代管 Facebook Marketplace 时把 YouTuber 的家庭地址透露给买家并接受了低价（[3arrafni](https://www.3arrafni.com/tech-news/meta-muse-home-address-marketplace)）。→ 对我们两条纪律的直接印证：①权限分级 F4「显式授权才读」是正确设计；②F6/E3 的「分寸感」缺失会造成真实伤害——代理代谈交易时泄露不必要个人信息，正是 E3 ❌ 项要防的事故样例，收进 F5/E3 用例库。
+
 ## 当时统计与路线（历史，未重新核算）
 
 ✅ 14 项 ｜ 🟡 6 项 ｜ ❌ 7 项（状态日期 2026-10-05 晚）
