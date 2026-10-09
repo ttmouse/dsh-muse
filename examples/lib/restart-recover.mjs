@@ -159,9 +159,21 @@ export function modelFailKey(sessionId, turnEndSeq) {
  * 由用户在 UI 切模型后续跑（或未来经验证的 headless 接管通道）。
  */
 export function buildModelFailBrief(news) {
+  // 按错误签名（code+重置时点）折叠：同一渠道限频的几十个会话是同一件事，一行说清，
+  // 明细不进主对话（用户按会话名自行定位即可）——否则通道本身变成刷屏源（2026-10-09 实证：37 行同文）。
+  const groups = new Map()
+  for (const n of news) {
+    const reset = n.message.match(/reset at ([0-9: \-+UTC]+)/i)?.[1]?.trim() ?? ''
+    const sig = `${n.code || '模型错误'}|${reset}`
+    if (!groups.has(sig)) groups.set(sig, { code: n.code, reset, sample: n.message.slice(0, 120), ids: [] })
+    groups.get(sig).ids.push(n.sessionId)
+  }
+  const lines = [...groups.values()].map(g =>
+    `- ${g.ids.length} 个会话｜${g.code || '模型错误'}${g.reset ? `｜额度重置 ${g.reset}` : ''}｜如：${g.ids[0].slice(0, 26)}`
+  )
   return [
-    `【模型故障·需人工换模型】${news.length} 个会话的最后一轮收在模型侧错误上，**平台内无法代切模型**（模型选择是 UI 层设置），需要你在对应会话输入框右下角把模型切到有额度的渠道后说「继续」：`,
-    ...news.map(n => `- ${n.sessionId}｜${n.code || '模型错误'}｜${n.message}`),
-    '错误消息里的 reset 时间=额度重置时点，重置后原模型也可直接「继续」。去重按出错轮次 seq：同一轮只报一次。',
+    `【模型故障·需人工换模型】${news.length} 个会话的最后一轮收在模型侧错误上，平台内无法代切模型（模型选择是输入框右下角的 UI 设置）。处理办法：到对应会话把模型切到有额度的渠道后说「继续」；或等下述重置时点后原模型直接「继续」：`,
+    ...lines,
+    '去重按出错轮次 seq：同一轮只报一次。',
   ].join('\n')
 }

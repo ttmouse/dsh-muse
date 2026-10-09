@@ -221,12 +221,18 @@ test('正常收尾 / 无 turn/end / 非模型错误 → 都不命中', () => {
   assert.equal(detectModelFailure([ev('user/message', {}, 1)]), null)
 })
 
-test('去重键按会话+出错轮次；简报带会话与错误原文、且不再含「注入切模型」假恢复', () => {
+test('去重键按会话+出错轮次；简报按错误签名折叠同因会话、不含整段错误原文刷屏', () => {
   assert.equal(modelFailKey('session-a', 100), 'session-a:model-fail:100')
   assert.notEqual(modelFailKey('session-a', 100), modelFailKey('session-a', 200))
-  const b = buildModelFailBrief([{ sessionId: 'session-x', code: 'PI_AI_ERROR', message: 'usage exceeds ... reset at 2026-10-10 03:38' }])
+  const mk = id => ({ sessionId: id, code: 'PI_AI_ERROR', message: 'WorkBuddy AI: usage exceeds frequency limit, ... reset at 2026-10-10 03:38:44 UTC+8, alternatively, you can switch' })
+  const b = buildModelFailBrief([mk('session-x'), mk('session-y'), { sessionId: 'session-z', code: 'RATE_LIMIT', message: 'quota exhausted' }])
   assert.match(b, /session-x/)
-  assert.match(b, /usage exceeds/)
-  assert.match(b, /无法代切模型|UI 层/)
-  assert.doesNotMatch(b, /请先把本会话的模型切换/)
+  assert.match(b, /2026-10-10 03:38:44/)
+  assert.match(b, /无法代切模型|UI/)
+  // 同签名折叠：session-y 不单独成行；不同签名（RATE_LIMIT）独立一行
+  assert.doesNotMatch(b, /session-y/)
+  assert.match(b, /session-z/)
+  assert.match(b, /2 个会话/)
+  // 不再整行复制错误原文（防刷屏）
+  assert.doesNotMatch(b, /alternatively, you can switch/)
 })
