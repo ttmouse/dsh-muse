@@ -27,7 +27,7 @@ import { join } from 'node:path'
 import { callRpc } from './lib/dsh-client.mjs'
 import { deliverToMaster } from './lib/master-channel.mjs'
 import { seenRecently, markSeen, markSeenMany } from './lib/seen-set.mjs'
-import { classifyInterrupted, seenKeyOf, reportTtlMs, buildBrief, detectRestart, detectModelFailure, modelFailKey, modelFailPrompt, genuinelyOpen, migrateSeenKeys } from './lib/restart-recover.mjs'
+import { classifyInterrupted, seenKeyOf, reportTtlMs, buildBrief, buildModelFailBrief, detectRestart, detectModelFailure, modelFailKey, genuinelyOpen, migrateSeenKeys } from './lib/restart-recover.mjs'
 
 const URL_ = process.env.MUSE_URL ?? 'http://127.0.0.1:19387'
 const HOME = process.env.HOME ?? homedir()
@@ -199,14 +199,17 @@ report.suppressed = candidates.length - fresh.length
 
 /* ---- 模型类失败扫描（议题 832047A82866-4；与「未收口」互补）----
  * 这类会话轮次已收、但收在模型侧错误上（额度/限频/PI_AI_ERROR…），投影信号看不见。
- * 增量扫描：只看自上一拍以来变闲的会话（首拍回看 6 小时），每拍最多读 40 个转录；
- * 命中且未记账时直接向该会话注入「切模型 + 续跑」指令（样本：WorkBuddy 限频 → glm-5.3-flash）。 */
+ * 增量扫描：只看自上一拍以来变闲的会话（首拍回看 6 小时），每拍最多读 40 个转录。
+ * 2026-10-09 修订（用户纠错）：**不再向故障会话注入任何指令**——会话模型是 UI 层设置，
+ * 模型改不了自己的模型，旧「切模型+续跑」注入是假恢复，只会重烧失败轮并在用户会话里刷「处理失败」。
+ * 现在改为把「会话+错误+重置时间」并进主控简报，由用户在 UI 切模型后「继续」。 */
 const MODEL_FAIL_CAP = 40
 const mfStatePath = join(MUSE_DIR, 'restart-recover-modelfail.json')
 let mfState = {}
 try { mfState = JSON.parse(readFileSync(mfStatePath, 'utf8')) } catch {}
 const mfSince = Number.isFinite(mfState.lastScanAt) ? mfState.lastScanAt - 60_000 : now - 6 * 3600e3
-const modelFail = { pool: 0, detected: 0, resumed: 0, skipped: 0 }
+const modelFail = { pool: 0, detected: 0, news: 0, skipped: 0 }
+const mfNews = []
 if (!dryRun) {
   const mfPool = all
     .filter(s => !s.running && !s.blank && s.sessionId !== masterId)
@@ -229,26 +232,24 @@ if (!dryRun) {
     modelFail.detected++
     const key = modelFailKey(s.sessionId, fail.turnEndSeq)
     if (seenRecently(mfSeenPath, key, reportTtlMs())) { modelFail.skipped++; continue }
-    try {
-      await callRpc(URL_, 'session/prompt', {
-        requestId: `restart-modelfail-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
-        sessionId: s.sessionId, mode: 'queue',
-        content: [{ type: 'text', text: modelFailPrompt(fail) }],
-      })
-      modelFail.resumed++
-      markSeenMany(mfSeenPath, [key], reportTtlMs(), { cap: 50 })
-      console.log('restart-recover: 模型类失败已注入换模型恢复 →', s.sessionId.slice(0, 26), `（${fail.code || fail.message.slice(0, 60)}）`)
-    } catch (e) { modelFail.skipped++; console.error('restart-recover: 模型失败恢复注入失败', String(e?.message ?? e).slice(0, 120)) }
+    mfNews.push({ sessionId: s.sessionId, code: fail.code, message: fail.message, key })
   }
-  try { writeFileSync(mfStatePath, JSON.stringify({ lastScanAt: now }, null, 2)) } catch {}
+  modelFail.news = mfNews.length
 }
 report.modelFail = modelFail
 
-// 未收口候选为零 ⇒ 本拍没有要报的名单，直接静默（模型失败扫描是独立通道，已在上面自行注入，
-// 不应影响这里；2026-10-09 修订：先前误把「有模型失败恢复」当豁免条件，导致投出过一次空名单）。
-if (!fresh.length) {
+// 模型失败新闻的去重记账（投递成功后调用；与中断对话名单一样「先投递、后记账」）
+function markModelFailSeen() {
+  if (!mfNews.length) return
+  markSeenMany(join(MUSE_DIR, 'restart-recover-modelfail-seen.json'), mfNews.map(n => n.key), reportTtlMs(), { cap: 50 })
+}
+
+// 未收口候选为零且无模型失败新闻 ⇒ 静默；有模型失败新闻时即使没有中断对话也要投递
+// （2026-10-09 二次修订：模型失败不再自行注入，唯一出口是主控简报）。
+if (!fresh.length && !mfNews.length) {
   report.detail = candidates   // 静默拍也留清单：主控随时能核查「被压制的到底是谁」
   try { writeFileSync(join(MUSE_DIR, 'restart-recover.json'), JSON.stringify(report, null, 2)) } catch (e) { console.error('restart-recover: 报告落盘失败', String(e?.message ?? e).slice(0, 120)) }
+  try { writeFileSync(mfStatePath, JSON.stringify({ lastScanAt: now }, null, 2)) } catch {}
   // 三种「没得报」要说清是哪一种，否则日志把「压根没扫到中断对话」错说成「已报过」，
   // 事后排查会误以为功能正常在压制、实际可能是判据失效（2026-10-09 修正）。
   const why = candidates.length
@@ -257,8 +258,13 @@ if (!fresh.length) {
   console.log('restart-recover:', why, '，不投递、静默退出')
   process.exit(0)
 }
+try { writeFileSync(mfStatePath, JSON.stringify({ lastScanAt: now }, null, 2)) } catch {}
 
-const brief = buildBrief(fresh, { total: all.length, scanned, restart, windowH: WINDOW_H })
+
+const brief = [
+  buildBrief(fresh, { total: all.length, scanned, restart, windowH: WINDOW_H }),
+  ...(mfNews.length ? ['', buildModelFailBrief(mfNews)] : []),
+].join('\n')
 // 投递失败绝不当成已报：退回未标记状态，下一拍重试（否则这一批中断对话静默丢失）。
 let via
 try {
@@ -276,5 +282,6 @@ report.detail = fresh   // 主控处置要从报告直接拿候选清单；2026-
 
 // 先投递成功、后记账；记账失败由 markSeenMany 自己吞掉并提醒（见 seen-set 头注）。
 markSeenMany(seenPath, fresh.map(c => seenKeyOf(c, identity.startedAt)), reportTtlMs(), { cap: 50 })
+markModelFailSeen()
 try { writeFileSync(join(MUSE_DIR, 'restart-recover.json'), JSON.stringify(report, null, 2)) } catch (e) { console.error('restart-recover: 报告落盘失败', String(e?.message ?? e).slice(0, 120)) }
 console.log('restart-recover: 已上报', fresh.length, '个中断对话（普查', all.length, '会话，通道', via, '）')

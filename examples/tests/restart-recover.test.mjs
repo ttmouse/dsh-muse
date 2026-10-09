@@ -171,10 +171,10 @@ test('普查阶段必须自带防线：session/list 的 await 被 try/catch 包�
 test('零候选短路：不投递，且日志区分「无中断对话」与「已报过」', async () => {
   const { readFileSync } = await import('node:fs')
   const src = readFileSync(new URL('../restart-recover.mjs', import.meta.url), 'utf8')
-  // 2026-10-09 二次修订：模型失败扫描是独立通道、自行注入并自行退出；未收口候选为零时
-  // 必须静默退出——曾误加「!modelFail.resumed」豁免条件，投出过一次空名单卡片。
-  const at = src.indexOf('if (!fresh.length) {')
-  assert.notEqual(at, -1, '零候选短路分支应存在')
+  // 2026-10-09 三次修订：模型失败通道已并入简报（不再自行注入），短路条件是
+  // 「零未收口候选 且 无模型失败新闻」；曾有「!modelFail.resumed」豁免投出过空名单卡片。
+  const at = src.indexOf('if (!fresh.length && !mfNews.length) {')
+  assert.notEqual(at, -1, '零候选且零模型失败新闻的短路分支应存在')
   const branchEnd = src.indexOf('process.exit(0)', at)
   assert.notEqual(branchEnd, -1, '短路分支必须 exit 0')
   const branch = src.slice(at, branchEnd)
@@ -186,7 +186,9 @@ test('零候选短路：不投递，且日志区分「无中断对话」与「�
 })
 
 // ---- 模型类失败识别（议题 832047A82866-4；样本 claim-d8cdce3c WorkBuddy 限频）----
-import { detectModelFailure, modelFailKey, modelFailPrompt } from '../lib/restart-recover.mjs'
+// 2026-10-09 修订：通道从「向故障会话注入切模型指令」（假恢复——模型改不了自己的模型）
+// 改为「并进主控简报由用户在 UI 切模型」；测试随契约同步。
+import { detectModelFailure, modelFailKey, buildModelFailBrief } from '../lib/restart-recover.mjs'
 
 const ev = (type, extra = {}, seq = 0) => ({ type, seq, data: extra })
 const turnEndError = (msg, seq = 100) => ev('turn/end', { reason: { kind: 'error', error: { code: 'PI_AI_ERROR', message: msg } } }, seq)
@@ -219,10 +221,12 @@ test('正常收尾 / 无 turn/end / 非模型错误 → 都不命中', () => {
   assert.equal(detectModelFailure([ev('user/message', {}, 1)]), null)
 })
 
-test('去重键按会话+出错轮次；提示词点名切换 glm-5.3-flash', () => {
+test('去重键按会话+出错轮次；简报带会话与错误原文、且不再含「注入切模型」假恢复', () => {
   assert.equal(modelFailKey('session-a', 100), 'session-a:model-fail:100')
   assert.notEqual(modelFailKey('session-a', 100), modelFailKey('session-a', 200))
-  const p = modelFailPrompt({ code: 'PI_AI_ERROR', message: 'usage exceeds' })
-  assert.match(p, /glm-5\.3-flash/)
-  assert.match(p, /usage exceeds/)
+  const b = buildModelFailBrief([{ sessionId: 'session-x', code: 'PI_AI_ERROR', message: 'usage exceeds ... reset at 2026-10-10 03:38' }])
+  assert.match(b, /session-x/)
+  assert.match(b, /usage exceeds/)
+  assert.match(b, /无法代切模型|UI 层/)
+  assert.doesNotMatch(b, /请先把本会话的模型切换/)
 })
