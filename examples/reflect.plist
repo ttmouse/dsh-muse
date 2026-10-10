@@ -6,7 +6,7 @@
     <string>/opt/homebrew/bin/node</string>
     <string>/Users/douba/Projects/dsh-muse/examples/reflect/reflect.mjs</string>
     <string>--url</string><string>http://127.0.0.1:19387</string>
-    <string>--session</string><string>session-5f0ba157-3c09-401a-839b-870bbbedcb7c</string>
+    <string>--session</string><string>session-7aef696c-da0a-48d4-ae04-0a11d2f71667</string>
   </array>
   <key>StartInterval</key><integer>1800</integer>
   <key>WorkingDirectory</key><string>/Users/douba/Projects/dsh-muse</string>
