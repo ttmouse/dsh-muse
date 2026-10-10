@@ -19,8 +19,8 @@
 **目标**：交接简报已指示新主控首轮自动挂载目标池 armed（角色级目标模式，用户 2026-10-09 拍板；登记 ~/.dsh/muse/master-role.json），无需人工。
 **常驻自治**：平台的授权人证要求人类消息属于本会话（muse/src/intent-store.ts agentAutonomy），**无法跨会话继承**——新主控首轮会发一张卡向你求一词确认（回「继续」即 muse_autonomy(true)）。这是角色级方案里唯一保留的人工步骤，一句话可撤。
 
-### 2. ~~重建 4 个调度~~（2026-10-10 起废弃：已整体迁移到 dsh-taskboard）
-官方 schedule 需挂在对话上、用户无法暂停/手动执行——用户 2026-10-10 拍板改用任务看板。4 个节拍现为 dsh-muse 项目的循环议题（identifier 832047A82866-10 ~ -13：9:30 对标 / 20:35 总结 / 周日 20:10 周报 / 周日 21:00 元复盘），完整 prompt 在议题描述里，执行完移回 todo 循环使用。新主控**不要**再 schedule_create 重建；附录 A-D prompt 仅作历史参考，正本以议题描述为准。
+### 2. ~~重建 4 个调度~~（2026-10-10 起废弃：已迁到 ~/.dsh/routines 常规定时单元 + 看板循环议题）
+官方 schedule 需挂在对话上、用户无法暂停/手动执行——用户 2026-10-10 拍板：官方 schedule 改为 ~/.dsh/routines/ 下 4 个常规定时单元（muse-daily-benchmark / muse-daily-summary / muse-weekly-digest / muse-weekly-meta-retro，paused 翻 true 即暂停、不挂死会话）；同时 dsh-muse 项目保有 4 个循环议题（832047A82866-10 ~ -13）供看板手动触发，两边正本一致、二选一执行即可。新主控**不要**再 schedule_create 重建；附录 A-D prompt 仅作历史参考。
 - **9:30 每日对标审查**：web_search Muse 新细节 + Today.app 版本监测 + 清单核对（prompt 见旧对话或按 docs/capability-checklist.md 语义重建）
 - **20:35 每日项目总结**：三源管线（node examples/daily-summary-sources.mjs + ec review + 记忆增量 → ev_add_md 写入当日笔记）
 - **周日 20:10 每周摘要**：node examples/weekly-digest.mjs --note
