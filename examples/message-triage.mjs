@@ -22,7 +22,7 @@ const URL = process.env.MUSE_URL ?? 'http://127.0.0.1:19387'
 const hour = new Date().getHours()
 if (hour < 8 || hour >= 23) process.exit(0)
 
-const A_CUES = /[？?]|等你回复|截止|需要你确认|需要你决定|尽快/i
+const A_CUES = /[？?]|等你回复|截止|需要你确认|需要你决定|尽快|对一下|对齐|开个会|聊一下|需要我们/i
 // 微信渠道额外要求：最近 24h 内 + 最后发送者非本人（未回复）
 import { mkdirSync as _mkdir } from 'node:fs'
 const followups = []
