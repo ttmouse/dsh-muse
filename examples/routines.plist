@@ -10,7 +10,7 @@
     <string>--profile</string>
     <string>ops</string>
   </array>
-  <key>WorkingDirectory</key><string>/Users/douba/Projects/dsh-muse</string>
+  <key>WorkingDirectory</key><string>/Users/douba</string>
   <key>RunAtLoad</key><true/>
   <key>KeepAlive</key><true/>
   <key>ThrottleInterval</key><integer>30</integer>

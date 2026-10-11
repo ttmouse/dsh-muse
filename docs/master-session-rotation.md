@@ -28,6 +28,20 @@
 - 装/重载：`launchctl bootout gui/$(id -u)/com.dsh-muse.routines 2>/dev/null; launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.dsh-muse.routines.plist`；
 - 验收必须看**真产出**：`ls ~/.dsh/routines/runs/`（run record）与 `state.json` 的 `lastRunAt`，`launchctl list` 显示 PID 只证明进程活着、不证明节拍跑过；
 - 该守护不需重指会话（无会话指向），但每次轮换应用 `dsh --profile ops routines list` 核对 4 条 muse 节拍为 active，并确认其余休眠单元仍是 `paused: true`（避免误燃他项目的定时任务）。
+
+**两个坑（2026-10-11 实测定型，别再踩）**：
+1. **WorkingDirectory 必须是 `~`，不能是仓库目录**。调度器的「锚点状态」按**启动 cwd** 定位（`@dsh-routines/bundle/lib/state.js`：`<cwd>/.dsh/routines/state.json`），而节拍 YAML 在全局目录。若 cwd 指向仓库，读到的是另一份（不存在的）状态 → 所有全局节拍的 `lastRunAt` 为 0 → 该实现对「从未跑过」的 cron 规则 `nextAfter(now)` 永不在未来 → **静默永不触发**（连 skipped 记录都没有）。改 `WorkingDirectory` 为 `/Users/douba` 后，12:56 muse-daily-benchmark 立即以 `trigger=schedule` 完成真实首跑。
+2. **种子法补跑与验收**：改完配置若想让某节拍立刻补跑一次，就把它在 `~/.dsh/routines/state.json` 的 `lastRunAt` 设成**本应触发的那次时刻**（不要设成未来，否则会静默很久），其余节拍设成当前时刻做静默；重启守护后 30s 内 tick 即触发（实测约 2 分钟跑完）。真产出看 `~/.dsh/routines/runs/<runId>.json`（`status/trigger/digest`）与 state.json 的 `lastRunAt`。
+3. **routine 的 run record 落在 `routine.cwd` 下**（`<cwd>/.dsh/routines/runs/`），不是全局 runs 目录；全局 runs 目录只承接 cwd 缺省的单元。补跑后核对产物别找错地方。
+
+**工具族可达性自检（2026-10-11 新增，A 类故障）**：桌面 profile 的 `@deepseek-ai/dsh-muse` / `dsh-tool-muse` 两个软链曾在 10-09 18:45 被 pnpm 重指到**已不存在**的 `~/Projects/deepseek-harness/packages/muse/*`（该 checkout 已无 muse 包），后果是宿主内 **Muse 内核与 muse_autonomy 等工具完全不存在**——「回继续也写不进自治」正是它。这类故障在 launchctl / 看板 / 会话投影侧**全无痕迹**，只能靠解析层自证发现：
+
+```sh
+cd ~/.dsh/profiles/<profile> && node --input-type=module -e "
+for (const p of ['@deepseek-ai/dsh-muse','@deepseek-ai/dsh-tool-muse','@deepseek-ai/dsh-tool-memory'])
+  try { console.log(p,'->',import.meta.resolve(p)) } catch(e){ console.log(p,'FAIL',e.code) }"
+```
+三条都必须解析到 `~/Projects/dsh-muse/{muse,tool-muse,tool-memory}/lib/index.js`。修法三处同步（package.json 的 link:、pnpm-lock 的 specifier+version、node_modules 软链），改完**必须重启 App** 才重新挂载。全 profile 批量扫断链：遍历 `~/.dsh/profiles/*/node_modules` 下 `find -type l`，`[ -e ]` 为假即断链（2026-10-11 扫出 desktop 与 web 两处 muse 断链，均已修，备份 `*.bak-20261011-muse-relink`）。
 - **9:30 每日对标审查**：web_search Muse 新细节 + Today.app 版本监测 + 清单核对（prompt 见旧对话或按 docs/capability-checklist.md 语义重建）
 - **20:35 每日项目总结**：三源管线（node examples/daily-summary-sources.mjs + ec review + 记忆增量 → ev_add_md 写入当日笔记）
 - **周日 20:10 每周摘要**：node examples/weekly-digest.mjs --note
