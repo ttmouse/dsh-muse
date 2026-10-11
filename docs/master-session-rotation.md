@@ -11,7 +11,8 @@
 | 目标池（4 个长期目标） | ~/.dsh/muse/goal-pool.json | 随时可读 |
 | 关键人注册表 | ~/.dsh/muse/key-people.json + 记忆 | 已入记忆 |
 | Muse 身份 | ~/.dsh/muse/identity.json | 自动注入 |
-| launchd 静默层（gate/reflect/分诊/巡查/复盘触发） | 正本在本仓库 examples/*.plist（gate / ops-warden-trigger / message-triage / stall-patrol / reflect，rotate-master 每日 08:00 自动重指五 plist）；仅 memory-maintenance（无会话指向）仍在 ~/Library/LaunchAgents | 与对话无关，继续跑 |
+| launchd 静默层（gate/reflect/分诊/巡查/复盘/重启恢复触发） | 正本在本仓库 examples/*.plist（gate / ops-warden-trigger / message-triage / stall-patrol / reflect / restart-recover，rotate-master 每日 08:00 自动重指六个 plist）；仅 memory-maintenance（无会话指向）仍在 ~/Library/LaunchAgents | 与对话无关，继续跑 |
+| routines 调度器守护（4 个每日节拍的执行载体） | examples/routines.plist → `dsh --profile ops`（label com.dsh-muse.routines，KeepAlive）；节拍正本 ~/.dsh/routines/muse-*.yaml | 无会话指向、无需重指，继续跑 |
 
 ## 需要在新对话重建（约 5 分钟）
 
@@ -21,6 +22,12 @@
 
 ### 2. ~~重建 4 个调度~~（2026-10-10 起废弃：已迁到 ~/.dsh/routines 常规定时单元 + 看板循环议题）
 官方 schedule 需挂在对话上、用户无法暂停/手动执行——用户 2026-10-10 拍板：官方 schedule 改为 ~/.dsh/routines/ 下 4 个常规定时单元（muse-daily-benchmark / muse-daily-summary / muse-weekly-digest / muse-weekly-meta-retro，paused 翻 true 即暂停、不挂死会话）；同时 dsh-muse 项目保有 4 个循环议题（832047A82866-10 ~ -13）供看板手动触发，两边正本一致、二选一执行即可。新主控**不要**再 schedule_create 重建；附录 A-D prompt 仅作历史参考。
+
+**执行载体（2026-10-11 补齐，此前缺失）**：这些 YAML 只是「正本」，真正到点开跑的是常驻调度器 `dsh --profile ops`。该进程 2026-09-01 起就没人拉起，导致 10-10 迁到 routines 的当天**一次都没跑**（10-11 08:0x 发现时 `~/.dsh/routines/runs/` 为空、`state.json` mtime 停在 10-01）。现已固化为 launchd 常驻单元：
+- 正本 `examples/routines.plist`（label `com.dsh-muse.routines`，`RunAtLoad`+`KeepAlive`），软链到 `~/Library/LaunchAgents/com.dsh-muse.routines.plist`；
+- 装/重载：`launchctl bootout gui/$(id -u)/com.dsh-muse.routines 2>/dev/null; launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.dsh-muse.routines.plist`；
+- 验收必须看**真产出**：`ls ~/.dsh/routines/runs/`（run record）与 `state.json` 的 `lastRunAt`，`launchctl list` 显示 PID 只证明进程活着、不证明节拍跑过；
+- 该守护不需重指会话（无会话指向），但每次轮换应用 `dsh --profile ops routines list` 核对 4 条 muse 节拍为 active，并确认其余休眠单元仍是 `paused: true`（避免误燃他项目的定时任务）。
 - **9:30 每日对标审查**：web_search Muse 新细节 + Today.app 版本监测 + 清单核对（prompt 见旧对话或按 docs/capability-checklist.md 语义重建）
 - **20:35 每日项目总结**：三源管线（node examples/daily-summary-sources.mjs + ec review + 记忆增量 → ev_add_md 写入当日笔记）
 - **周日 20:10 每周摘要**：node examples/weekly-digest.mjs --note
