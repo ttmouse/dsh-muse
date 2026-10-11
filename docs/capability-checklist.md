@@ -98,7 +98,15 @@
 
 ## 当时统计与路线（历史，未重新核算）
 
-✅ 14 项 ｜ 🟡 6 项 ｜ ❌ 7 项（状态日期 2026-10-05 晚）
+## J3. Muse Spark 底层模型细节（2026-10-11 对标审查补录）
+
+来源：[Silicon Republic（2026-04-09）](https://www.siliconrepublic.com/machines/metas-superintelligence-labs-debuts-first-product-muse-spark)。Today.app 仍 1.21.3（基线一致）。
+
+- **底层模型家族首次成形**：Muse Spark 是 Meta Superintelligence Labs 首个产品、Muse 模型家族第一款，多模态，宣称性能对标 GPT-5.4 / Opus 4.6 / Gemini 3.1 Pro，将铺进 WhatsApp/Facebook/Instagram/AI 眼镜。→ 官方 agent 能力由专用模型承载，非通用底座微调。
+- **E3「分寸感」对标补充**：官方宣传与 1000+ 医生共建训练数据保证健康问答「factual and comprehensive」（对比 OpenAI Health 的 260 位），并在生物/化学武器等高危领域展示「strong refusal behaviour」。→ 印证 E3 ❌ 的判断：分寸感与安全拒绝是训练数据垒出来的内生能力，我们只能用 prompt 约束逼近；医生共建数据这条路线无法复制，维持 ❌ 并记为长期差距标尺。
+- **F5 对标补充**：官方把「网络安全自主威胁能力不足」作为模型安全评估结论对外披露——官方有专门 red-team 评估体系；我们无分类器、无专门评估，F5 🟡 维持。
+
+✅ 14 项 ｜ 🟡 6 项 ｜ ❌ 7 项
 
 **下一批最短路径**（按性价比）：
 1. C5 多目标节奏 + 建目标自动配日程（小）
