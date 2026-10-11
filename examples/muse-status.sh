@@ -62,3 +62,35 @@ else
   echo "  （无 identity.json）"
 fi
 echo "== 待处理信号 =="; [[ -f "$project_dir/MUSE-SIGNAL.md" ]] && echo "  有信号文件" || echo "  (无)"
+
+# 不可见层自检（2026-10-11 新增）：这些故障在 launchctl / 看板 / 会话投影侧全无痕迹，只能主动探测
+echo "== routines 调度器（4 个每日节拍的执行载体）=="
+if launchctl list com.dsh-muse.routines >/dev/null 2>&1; then
+  pid="$(launchctl list com.dsh-muse.routines | awk -F'= ' '/"PID"/ { print $2 }' | tr -d ';')"
+  # launchctl list 不暴露 WorkingDirectory，直接问进程（lsof 取 cwd；失败则回退读 plist 正本）
+  cwd=""
+  [[ -n "$pid" ]] && cwd="$(lsof -a -p "$pid" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p' | head -1)"
+  [[ -z "$cwd" ]] && cwd="$(sed -n 's#.*<key>WorkingDirectory</key><string>\(.*\)</string>.*#\1#p' "$project_dir/examples/routines.plist" | head -1)"
+  printf '  PID=%s  cwd=%s\n' "${pid:-?}" "${cwd:-未知}"
+  if [[ "$cwd" != "$HOME" ]]; then
+    echo "  ⚠️ cwd 不是 ~：调度锚点按启动 cwd 定位 <cwd>/.dsh/routines/state.json，节拍会静默永不触发"
+  fi
+  runs="$(find "$HOME/.dsh/routines/runs" -name '*.json' -newermt '-26 hours' 2>/dev/null | wc -l | tr -d ' ')"
+  if [[ "$runs" == "0" ]]; then
+    echo "  ⚠️ 最近 26h 无 run record —— 守护活着不等于节拍跑过，查 ~/.dsh/routines/state.json 的 lastRunAt"
+  else
+    echo "  最近 26h run record: $runs 条（真产出）"
+  fi
+else
+  echo "  ⚠️ com.dsh-muse.routines 未加载——4 个每日节拍不会执行"
+  echo "     装载：launchctl bootstrap gui/\$(id -u) ~/Library/LaunchAgents/com.dsh-muse.routines.plist"
+fi
+echo "== 工具族可达性（断链则 Muse 内核与 muse_* 工具在宿主内不存在）=="
+for prof in desktop web; do
+  dir="$HOME/.dsh/profiles/$prof"
+  [[ -d "$dir" ]] || continue
+  out="$(cd "$dir" && node --input-type=module -e "
+for (const p of ['@deepseek-ai/dsh-muse','@deepseek-ai/dsh-tool-muse','@deepseek-ai/dsh-tool-memory'])
+  try { import.meta.resolve(p) } catch { console.log(p) }" 2>/dev/null)"
+  if [[ -z "$out" ]]; then echo "  $prof: 三包均可解析 ✓ (ok)"; else echo "  $prof: ⚠️ 解析失败 $out（修 package.json/lock/软链后须重启 App）"; fi
+done
