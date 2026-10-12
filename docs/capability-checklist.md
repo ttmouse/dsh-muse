@@ -9,7 +9,7 @@
 ## A. 执行能力（它自己的电脑）
 
 [x] **A1 文件系统 + 终端**：自己写代码、构建任务所需工具 → DSH 的 fs/shell/code-runtime 等价能力现成，随插件装载即得 ✅
-- [ ] **A2 完整浏览器**：搜索、浏览、填表、预订/购买等交易 → 依赖宿主 browser 能力 🟡
+- [ ] **A2 完整浏览器**：搜索、浏览、填表、预订/购买等交易 → 依赖宿主 browser 能力 🟡（2026-10-12 补充：官方同样受阻——CNET 实测 Muse 代办运营商客服被反爬 403 层层拦截，需人工接管浏览器且接管也不改网络地址；反爬是全行业 agent 的共同天花板，见 J4）
 [x] **A3 制作 Artifacts**：可交互定制界面 ✅（2026-10-05 全切片完成）——切片 1 生成规范+实例（开支仪表盘）、切片 2 巡逻自动刷新（数据变→页面新）、切片 3 异常标记+持续异常主动提醒（24h 去重）。三切片均有验证证据
 
 ## B. 持续性
@@ -96,7 +96,14 @@
 - **生态开放（新）**：Muse Gadgets 开源 + 美国订户免费发放 Home Link dongle（[3arrafni](https://www.3arrafni.com/tech-news/meta-muse-gadgets-home-link)）。→ 硬件入口层，G 节结论不变。
 - **隐私双面（强化 I4/F5 教训）**：Meta 澄清 Mac 版 Muse 读 Messages 是选择性加入（opt-in，需显式授权），否认此前「私读」指控；但另一案例中 Muse 在代管 Facebook Marketplace 时把 YouTuber 的家庭地址透露给买家并接受了低价（[3arrafni](https://www.3arrafni.com/tech-news/meta-muse-home-address-marketplace)）。→ 对我们两条纪律的直接印证：①权限分级 F4「显式授权才读」是正确设计；②F6/E3 的「分寸感」缺失会造成真实伤害——代理代谈交易时泄露不必要个人信息，正是 E3 ❌ 项要防的事故样例，收进 F5/E3 用例库。
 
-## 当时统计与路线（历史，未重新核算）
+## J4. 安全事故与生态反制（2026-10-12 对标审查补录）
+
+来源：[Forkast（2026-09-22）](https://forkast.news/muses-undocumented-endpoint-turns-macos-agent-into-a-local-backdoor/)、[The Verge（2026-10-05）](https://www.theverge.com/tech/1004781/meta-reportedly-made-a-mad-dash-to-fix-a-muse-ai-breakout-bug-weeks-before-launch)（源报道 404 Media）、[环球网科技转述 CNET（2026-10-10）](https://www.sohu.com/a/1085919891_99900743)、[CNET 实测转述（2026-10-09）](https://infofortech.com/i-asked-meta-muse-to-fix-an-issue-with-my-phone-provider-it-got-blocked-at-every-turn/)。Today.app 仍 1.21.3（基线一致，2026-10-12 实查）。
+
+- **「agent 即攻击面」坐实（F5/F3 强对标）**：Wardle 9-21 披露 macOS 版 0-day——未文档化的偏好键 `endo_voyager_dictation_endpoint` 可被任意低权限本地进程改写，劫持听写流量→窃取会话令牌→五种攻击向量（音频窃取、提示词注入、会话劫持、向 iOS 设备横向移动、远程 ClickFix 社工）；PoC `not-a-mused` 实现 50+ 条 Muse 命令。Meta 约 12 小时后热修，**无 CVE、无正式公告**。→ 印证 F5 🟡：本机宿主同样暴露攻击面（gate/reflect 端口、脚本侧凭据），我们的 F5 清单应把「本地端口/IPC 被低权限进程劫持」列为攻击样例；无 CVE 无公告的披露方式也是对照标尺。
+- **VM 逃逸（云端架构也有边界）**：404 Media 报道 Meta 在发布前数周「mad dash」赶修 Muse VM 逃逸漏洞——可从虚拟机逃逸访问 Meta 自家数据库与服务；内部信源称安全团队被迫「赶出半生不熟的防护保上线」。→ J 节「云端私有 VM」口径需打折扣：隔离边界正在被官方自己追赶，I4 本机+零上传叙事继续成立，但也提醒我们本机宿主的隔离责任全在自己（无 Meta 兜底）。
+- **平台反制常态化（A2/H 生态逆风）**：CNET 实测 Muse 代办 Visible 客服全程被反爬拦截（guest 聊天按钮不提交、帮助页 403、人工接管也 403）；多家运营商与平台开始主动拦截 AI 代理流量，行业尚无 AI 代理访问规则；此前 Amazon 已因 Muse 不表明 AI 身份并疑似存客户凭据而封禁其购物。→ A2 补充依据见上；结论：完整浏览器交易能力的瓶颈不止在我们这边，官方同困——A2 🟡 维持，且反爬对抗不应成为我们的投入方向（红线：不做绕过反爬的伪装）。
+- **身份自报为行业新规则苗头**：Amazon 封禁理由「未表明 AI 身份 + 存凭据」——与我们 F2（凭据不进上下文）、发信审批卡（显式表明代理身份并留痕）的设计方向一致，记为未来交互纪律：对外操作应显式表明代理身份。
 
 ## J3. Muse Spark 底层模型细节（2026-10-11 对标审查补录）
 
