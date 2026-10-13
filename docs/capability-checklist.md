@@ -113,6 +113,16 @@
 - **E3「分寸感」对标补充**：官方宣传与 1000+ 医生共建训练数据保证健康问答「factual and comprehensive」（对比 OpenAI Health 的 260 位），并在生物/化学武器等高危领域展示「strong refusal behaviour」。→ 印证 E3 ❌ 的判断：分寸感与安全拒绝是训练数据垒出来的内生能力，我们只能用 prompt 约束逼近；医生共建数据这条路线无法复制，维持 ❌ 并记为长期差距标尺。
 - **F5 对标补充**：官方把「网络安全自主威胁能力不足」作为模型安全评估结论对外披露——官方有专门 red-team 评估体系；我们无分类器、无专门评估，F5 🟡 维持。
 
+## J5. iPad 版与装机量（2026-10-13 对标审查补录）
+
+来源：[Mashable（2026-10-08）](https://mashable.com/tech/meta-muse-ipad-ai-agent-business-tools)（转述 Meta 10-07 Threads 官宣与 App Store 更新说明）、[Meta 官方小企业公告（2026-09-29）](https://about.fb.com/news/2026/09/introducing-muse-small-business/)。Today.app 仍 1.21.3（基线一致，2026-10-13 实查）。
+
+- **iPad 版上线（G 节结论不变）**：Muse 10-07 官宣登陆 iPad，9-8 移动端首发后一个月内完成第二设备形态。→ 入口扩张继续不跟进。
+- **装机量破 660 万**：Muse 累计安装量估算超 6.6 million。→ 仅记为市场信号，不改变能力对标。
+- **小企业连接器名单精确化（H1 复核）**：App Store 更新说明列出 Asana、Canva、Dropbox、Figma、QuickBooks、GitHub、Klaviyo、Zoom、Meta 广告账户，另加 Granola 与 Notion。→ H1 ❌ 维持：名单与 10-08 已录一致，结论不变；官方还宣称用户可给业务目标让 Muse 规划营销内容、做客户提案、建产品页（需用户批准）。
+- **零售伙伴扩张（F6 对标补充）**：Connect 宣布新增 Best Buy、Gap、Sephora、Walmart、Wayfair 等零售伙伴。→ 官方代购路径继续铺宽；F6 ❌ 维持（本机未接真实交易）。
+- **代理身份开放标准（J4 后续）**：Meta 称正与行业伙伴制定让个人代理向企业表明身份的开放标准。→ 印证 J4「身份自报」纪律；本机发信审批卡已显式表明代理身份，方向一致。
+
 ✅ 14 项 ｜ 🟡 6 项 ｜ ❌ 7 项
 
 **下一批最短路径**（按性价比）：
