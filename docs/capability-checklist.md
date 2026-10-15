@@ -29,7 +29,7 @@
 ## D. 交互形态
 
 - [x] **D1 一个持续长对话**：可打断、并发交叠、跨对话 ✅（DSH session 原生）
-- [ ] **D2 侧边对话**：单话题独立展开不污染主线 ❌（依赖宿主能力，DSH 有 subagent 可近似）
+- [ ] **D2 侧边对话**：单话题独立展开不污染主线 🟡（2026-10-15 落账：10-08 J 节实测 Agent Teams 独立上下文可近似后已判定 ❌→🟡，本行当时漏改；界面级会话分叉仍缺）
 - [x] **D3 目标/活动透明度**：看得见它在追踪什么、正在做什么 ✅（goals 标签页 + demo-journal + gate-decisions/reflect-decisions 日志 + muse-status.sh）
 - [x] **D4 结构化审批卡**：接受/拒绝的明确控件 ✅（interaction 审批卡原生；dsh-email 发信审批同源）
 - [x] **D5 聊天气泡区分**：主动消息与问答可区分 ✅（`[muse-gate]`/`[muse-idea]` 前缀约定；原生气泡渲染）
@@ -123,7 +123,22 @@
 - **零售伙伴扩张（F6 对标补充）**：Connect 宣布新增 Best Buy、Gap、Sephora、Walmart、Wayfair 等零售伙伴。→ 官方代购路径继续铺宽；F6 ❌ 维持（本机未接真实交易）。
 - **代理身份开放标准（J4 后续）**：Meta 称正与行业伙伴制定让个人代理向企业表明身份的开放标准。→ 印证 J4「身份自报」纪律；本机发信审批卡已显式表明代理身份，方向一致。
 
-✅ 14 项 ｜ 🟡 6 项 ｜ ❌ 7 项
+## J6. Muse Wonder frontier 模型与开源 Glimmer（2026-10-15 对标审查补录）
+
+来源：[TechCrunch（2026-10-12）](https://techcrunch.com/2026/10/12/meta-releases-its-first-frontier-model-muse-wonder/)、[Fast Company Brasil 转述 Meta 官方博客（2026-10-14）](https://fastcompanybrasil.com/ia/muse-wonder-nova-ia-meta-faz-competir-modelos-avancados/)（官方原文 research.meta.ai/blog/muse-wonder 本环境未抓到，能力细节为转述）、[IT之家（2026-10-08）](https://www.ithome.com/1/010/310.htm)、[Fast Company Brasil（2026-10-08）](https://fastcompanybrasil.com/ia/muse-glimmer-nova-aposta-meta-ia-codigo-aberto/)、[Fortune（2026-10-13，未核全文）](https://fortune.com/2026/10/13/metas-muse-models-reach-the-ai-frontier-and-kill-any-hopes-to-pace-it/)、[FT（2026-10-13，转述）](https://www.ft.com/content/fca23e77-be57-4d7e-ae61-74ff299e25cb)、[Artificial Analysis（2026-10-12，未核全文）](https://artificialanalysis.ai/articles/muse-wonder)、[IT之家（2026-10-09，未核全文）](https://www.ithome.com/1/010/754.htm)。Today.app 仍 1.21.3（基线一致，2026-10-15 实查）。
+
+- **底层模型换代（J3 升级）**：10-12 发布 Muse Wonder / Wonder Full，官方称首个 frontier 级模型；Wonder 走 Meta Model API 与 Muse Code（$4/百万输入、$20/百万输出 token），Wonder Full 不走 API、仅 Muse Code 订阅者可用，将逐步供给 Muse 订阅用户——agent 底座随之换血；Artificial Analysis 实测智能指数 52/56（上代 Spark 1.3 为 48），1M 上下文，输入文本/图像/视频/音频。→ J3「专用模型承载 agent 能力」继续成立且标尺上移。
+- **Active Memory / Active Focus（对标 E1/B1/C5）**：官方称 Wonder 内建 Active Memory（跨会话保存相关信息、召回上下文与用户偏好）与 Active Focus（多步任务规划、遇阻换法、纠错、必要时刻主动追问澄清）。→ E1/B1 已 ✅：官方把这两件事从产品机制下沉为模型内建能力，方向互证；「主动追问」记为 C3/C5 官方参照细节（转述，待官方原文复核）。
+- **编程与数字环境操作（A1 官方同构）**：宣称可从小 app 做到复杂软件、跨文件修改并验证结果、操作工具与数字环境、分析文档/理解合同/整理财务信息。→ A1 ✅ 的「自己写代码构建工具」被官方做成模型级卖点，无行动项。
+- **安全口径（F5 对照标尺）**：模型带防隐私不当共享与减少危险用途的保护，但完整安全评估报告后发。→ 官方同样先发模型后补安全报告；F5 🟡 维持，不拿官方节奏当放松理由——我们缺口仍在专门分类器与 red-team 评估。
+- **订阅三档（补 J2 商业模式）**：免费 + $20/月 + $100/月；Vals 评 Wonder 居网络安全基准第一（Fortune 转述）。→ 与「按交易抽成」并行：订阅是底座、抽成走交易路径，J2 结论不变。
+- **拒绝减速与安全延期（Zuck FT 专访，转述）**：拒绝行业「pacing the frontier」协调减速，称 Meta 曾为安全把 Muse 推迟数月才发。→ 对照标尺，无行动项。
+- **窗外漏录一：Windows 原生应用（10-08，G 节结论不变）**：微软 Surface 发布会宣布 Muse 以原生应用登陆 Windows 并集成 MXC SDK。→ 入口扩张再添一端，继续不跟进。
+- **窗外漏录二：开源 Muse Glimmer（新观察项）**：30B 参数、Apache 2.0 开放权重、面向本地 agent 场景，单消费级 GPU 可在 Mac/PC 本地跑，权重已上 Hugging Face（将支持 Ollama/LM Studio/llama.cpp）；跨长过程维持计划、故障自修、文本+图像输入、100+ 语言、推理档位可调（FC Brasil 10-08 报道，引官方博客 introducing-muse-glimmer-open-agentic-model 与 Reuters 2026-08-10 链接，首发日期待核）。→ 官方开了「本地可跑 agent 底座」先例，与我们全本机路线同向；未来 gate/reflect 若需本地小模型做分类，此为候选（仅记录，不启动）。
+- **窗外漏录三：首席 AI 官访谈（10-09，补 J2/E1）**：Alexandr Wang（IT之家误译「汪滔」）称记忆是持续改进重点、购物/省钱/赚钱类交易可抽费、已有订阅档位、暂不考虑广告。→ 与 J2/J6 商业口径一致；「记忆是重点」与我们 E1/E4 已 ✅ 方向互证。
+- **待核线索（标题级信源，沿用 I5 先例）**：Muse Voice Transcribe 实时会议转写、Meta One 订阅计划、Muse 新功能 beta 邀测（FC Brasil 相关文章标题，未读全文）——留待下次审查。
+
+✅ 24 项 ｜ 🟡 5 项 ｜ ❌ 4 项（2026-10-15 重算：A–I 计分项全量 33 项；F3 按预检部分计 ✅、残留见正文；D2 按 J 节落账 🟡）
 
 **下一批最短路径**（按性价比）：
 1. C5 多目标节奏 + 建目标自动配日程（小）
