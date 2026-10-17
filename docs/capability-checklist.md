@@ -136,9 +136,19 @@
 - **窗外漏录一：Windows 原生应用（10-08，G 节结论不变）**：微软 Surface 发布会宣布 Muse 以原生应用登陆 Windows 并集成 MXC SDK。→ 入口扩张再添一端，继续不跟进。
 - **窗外漏录二：开源 Muse Glimmer（新观察项）**：30B 参数、Apache 2.0 开放权重、面向本地 agent 场景，单消费级 GPU 可在 Mac/PC 本地跑，权重已上 Hugging Face（将支持 Ollama/LM Studio/llama.cpp）；跨长过程维持计划、故障自修、文本+图像输入、100+ 语言、推理档位可调（FC Brasil 10-08 报道，引官方博客 introducing-muse-glimmer-open-agentic-model 与 Reuters 2026-08-10 链接，首发日期待核）。→ 官方开了「本地可跑 agent 底座」先例，与我们全本机路线同向；未来 gate/reflect 若需本地小模型做分类，此为候选（仅记录，不启动）。
 - **窗外漏录三：首席 AI 官访谈（10-09，补 J2/E1）**：Alexandr Wang（IT之家误译「汪滔」）称记忆是持续改进重点、购物/省钱/赚钱类交易可抽费、已有订阅档位、暂不考虑广告。→ 与 J2/J6 商业口径一致；「记忆是重点」与我们 E1/E4 已 ✅ 方向互证。
-- **待核线索（标题级信源，沿用 I5 先例）**：Muse Voice Transcribe 实时会议转写、Meta One 订阅计划、Muse 新功能 beta 邀测（FC Brasil 相关文章标题，未读全文）——留待下次审查。
+- **待核线索（标题级信源，沿用 I5 先例）**：Muse Voice Transcribe 实时会议转写、Meta One 订阅计划、Muse 新功能 beta 邀测（FC Brasil 相关文章标题，未读全文）——**已于 J7 落账（2026-10-17）**。
 
-✅ 24 项 ｜ 🟡 5 项 ｜ ❌ 4 项（2026-10-15 重算：A–I 计分项全量 33 项；F3 按预检部分计 ✅、残留见正文；D2 按 J 节落账 🟡）
+## J7. Voice Transcribe 落账 + Spark Open×Apple + Wonder 隐私细则（2026-10-17 对标审查补录）
+
+来源：[DigitalToday 转 Muse Voice Transcribe（2026-10-03 发）](https://www.digitaltoday.co.kr/en/view/99692/meta-unveils-real-time-speech-recognition-model-muse-voice-transcribe)（官方原文 research.meta.ai/blog/introducing-muse-voice-transcribe 本环境两次抓取失败，细节为转述）、[DigitalToday×WSJ：Muse Spark Open 跑上 Mac（2026-10-16）](https://www.digitaltoday.co.kr/en/view/115317/meta-teams-up-with-apple-on-local-ai-as-muse-spark-open-runs-on-macs)、[IT168（2026-10-16，转述 VentureBeat）](https://cloud.it168.com/a2026/1016/6953/000006953766.shtml)、[TechCrunch Meta One（2026-09-15，全文未核）](https://techcrunch.com/2026/09/15/meta-expands-subscription-push-with-new-ai-focused-plans/)、[TechCrunch early access（2026-09-25，全文未核）](https://techcrunch.com/2026/09/25/meta-opens-early-access-program-for-new-muse-features/)。Today.app 仍 1.21.3（基线一致，2026-10-17 实查）。
+
+- **J6 待核线索落账①：Muse Voice Transcribe 坐实（对标 rtc-transcriber，G 节结论不变）**：MSL 首个实时语音识别模型（9-1 发布），Muse Spark 家族自回归多模态模型，单模型同时做实时转写+说话人分离+语句结束检测；80ms 单位处理、自适应延迟（按词难度决定继续听还是立即出字）；Artificial Analysis 流式评测第一（WER 3.1%）；70+ 语言训练、25 种深度校验（含中英日韩），原生 code-switching；支持预置语言/关键词/上下文提升准确率；1h+ 音频、20+ 说话人免后处理；定价 $0.18/小时音频（$3/千分钟）；已上 Meta Model API / Meta AI for Mac / Muse Code，Mac 上按住 Fn 即系统级语音输入。→ 本机 rtc-transcriber 是同场景（会议转写），官方把它做成模型级能力+系统级入口；「关键词/上下文预置」记为可借鉴的转写质量手段（仅记录）。
+- **J6 待核线索落账②：Muse Spark Open×Apple（J6 窗外漏录二升级）**：Meta 发布第二个开放权重模型 Muse Spark Open，Apple 更新 MLX 工具使其顺畅跑在 Mac 上（WSJ 10-15），MLX 可把 AI 负载分摊到多台互联 Mac；官方推荐本机配置两台 M5 Ultra Mac Studio（各 512GB 统一内存），实际需 1TB+ 内存（约 $40k+，WSJ 称比月租数千美元的云算力更划算）；Wang：「世界相当一部分将跑在开放模型上」。→ Apple 官方背书 Mac 本地推理，与 Glimmer 同向且更重磅；但 1TB 内存门槛决定它不是本机 gate/reflect 分类候选——Glimmer 30B 仍是唯一候选。
+- **Wonder 访问与隐私细则补充（J6 升级，I4/F4 对标）**：两款 Wonder 均不提供公开下载/自行托管（告别 Llama 开放权重时代）；Muse Code 订阅默认开启「贡献者模式」（提交内容用于训练未来模型，可关闭），标准 API 不用于训练——与 J 节「Muse app 数据默认用于训练」口径一致，**默认开启**是行业反向标尺，强化 I4（我们零上传、无训练用途）；Wonder Full 走 Muse Code 订阅 $50/$200 两档（J6 的免费+$20+$100 是 Muse app 订阅，两条订阅线并存）；API 缓存输入有折扣；模型设计为「执行重要操作前主动求确认」——与 D4 审批卡/F4 授权模型官方同构，无行动项；完整安全评估报告仍未发（F5 对照标尺不变）。
+- **J6 待核线索落账③：Meta One 与 beta 邀测名称坐实（均标题级）**：Meta One 为订阅计划名称（TechCrunch 9-15；Nasdaq 分析师文称早期数据积极，标题级）；beta 邀测 = Muse 新功能 early access 计划（TechCrunch 9-25）。两条只落账名称与日期，能力细节待全文。
+- **新待核线索（标题级，沿用 I5 先例）**：Muse 应用不在欧洲推出（[notebookcheck-cn](https://www.notebookcheck-cn.com/Meta-Muse-Wonder-Muse.1423057.0.html)，监管侧信号）；Muse 覆盖七个推理平台（[gurufocus](https://www.gurufocus.com/news/9127778/meta-stocks-slip-although-muse-reaches-seven-inference-platforms)，市场信号）——留待下次审查。
+
+✅ 24 项 ｜ 🟡 5 项 ｜ ❌ 4 项（2026-10-17 复核：计数维持 10-15 重算不变，本轮纯对标事实补录、无勾选变化；git HEAD 即上轮 J6 提交，其后无新实现提交，无「已实现未打勾」项）
 
 **下一批最短路径**（按性价比）：
 1. C5 多目标节奏 + 建目标自动配日程（小）
